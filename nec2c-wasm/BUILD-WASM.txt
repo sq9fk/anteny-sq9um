@@ -1,0 +1,6 @@
+nec2c (https://github.com/KJ7LNW/nec2c, GPL-3.0) compiled to WebAssembly for the page index.html.
+Change vs upstream: main.c – signal handler setup wrapped in #ifndef __wasi__.
+Build (clang 18 + wasi-sysroot-24.0 + libclang_rt.builtins-wasm32 from wasi-sdk 24):
+  clang --target=wasm32-wasi --sysroot=$SR -O2 -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS -DPACKAGE_STRING='"nec2c"' -c calculations.c fields.c geometry.c ground.c input.c main.c matrix.c misc.c network.c radiation.c shared.c somnec.c
+  wasm-ld -o nec2c.wasm $SR/lib/wasm32-wasi/crt1-command.o *.o -L$SR/lib/wasm32-wasi -lc -lm -lwasi-emulated-signal -lwasi-emulated-process-clocks libclang_rt.builtins-wasm32.a -z stack-size=1048576
+The wasm binary is embedded (base64) in index.html and run in a Web Worker with a small in-memory WASI shim.
