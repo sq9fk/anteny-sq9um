@@ -129,11 +129,43 @@ tbody tr{cursor:pointer}
 .dxdir .dxh{font-weight:600;font-size:13px}
 .dxdir .dxrow{font-size:12.5px;padding:6px 8px}
 .dxno{font-size:12px;color:var(--muted);padding:2px 8px}
+.dxg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px 6px;margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.dxg .top{color:var(--ink);font-weight:600}
 .dxrow .best{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
 .dxrow .ls{color:var(--muted)}
 .dxrow.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .planbtn{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--accent);border-radius:5px;background:var(--accent-soft);color:var(--ink);cursor:pointer;align-self:flex-start}
 .elctl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+/* the parameter panel scrolls on its own, so on a short screen every control stays reachable next to the charts */
+@media (min-width:881px){.controls{max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}}
+/* wide, short screens (e.g. 1920 × 768): full width, header and tabs in one row, KPIs in their own column, charts sized to the window height */
+@media (min-width:1400px){
+  body{padding-block:10px 32px;padding-inline:20px}
+  .wrap{max-width:none;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:28px;row-gap:12px;align-items:end}
+  header{grid-column:1;flex-direction:column;align-items:flex-start;border-bottom:0;padding-bottom:0;gap:4px}
+  h1{font-size:28px} h1 small{font-size:13px}
+  .loc{text-align:left;font-size:11.5px;line-height:1.35}
+  .tabs{grid-column:2;justify-content:flex-end;border-bottom:0;gap:6px}
+  .tabs button{font-size:15px;padding:5px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:0}
+  .tabs button[aria-selected="true"]{box-shadow:inset 0 -3px 0 var(--accent)}
+  .layout,.mview{grid-column:1 / -1}
+  .layout{grid-template-columns:340px minmax(0,1fr);gap:18px}
+  .controls{padding:14px;gap:14px;top:10px;max-height:calc(100vh - 20px)}
+  .main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 380px;gap:16px;align-items:start}
+  .kpis{grid-column:3;grid-row:1 / span 3;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+  .kpi .v{font-size:22px}
+  .row2{grid-column:1 / 3;grid-row:1;gap:16px}
+  .fig-v{grid-column:1 / 3;grid-row:2}
+  .fig-plan{grid-column:1 / 3;grid-row:3}
+  .fig-dx{grid-column:1 / -1}
+  .notes{grid-column:1 / -1;max-width:none;display:block;column-width:36em;column-gap:36px}
+  .notes > *{break-inside:avoid;margin:0 0 8px}
+  figure{padding:12px}
+  #sky,#azp{max-width:min(100%,calc(100vh - 300px));margin-inline:auto}
+  #elp,#prof{max-width:min(100%,calc((100vh - 170px) / 0.556));margin-inline:auto}
+  #plan{max-width:min(100%,calc((100vh - 190px) / 0.578));margin-inline:auto}
+  #mastPlan{max-width:min(100%,calc((100vh - 150px) / 0.711));margin-inline:auto}
+}
 .elctl input{flex:1}
 </style>
 <style>body{margin:0}</style>
@@ -459,7 +491,7 @@ tbody tr{cursor:pointer}
         </figure>
       </div>
 
-      <figure>
+      <figure class="fig-v">
         <figcaption><h2 id="vTitle">Charakterystyka pionowa</h2><span class="d">Przekrój w wybranym azymucie (prawa strona) i przeciwnym (lewa). Pod spodem profil terenu z Geoportalu, pionowo przesadzony, z uwzględnieniem krzywizny Ziemi.</span></figcaption>
         <div class="num"><label for="selAz">Azymut przekroju</label><input type="number" id="selAz" min="0" max="359" step="1" value="310" inputmode="numeric"><span>°</span>
           <button type="button" id="sMinus" aria-label="Azymut minus 1 stopień">−1°</button><button type="button" id="sPlus" aria-label="Azymut plus 1 stopień">+1°</button>
@@ -469,7 +501,7 @@ tbody tr{cursor:pointer}
         <div class="legend"><span><span class="sw"></span>z rzeźbą terenu</span><span><span class="sw ref"></span>płaski grunt</span><span class="nbLeg" hidden><span class="sw nb"></span>z terenem, bez sąsiednich anten</span></div>
       </figure>
 
-      <figure>
+      <figure class="fig-plan">
         <figcaption><h2>Otoczenie działki</h2><span class="d">Budynki w promieniu 500 m z modeli 3D LoD1 2024 GUGiK (CC BY 4.0), wysokości pomierzone lidarem, kolor według wysokości. Linia ciągła to wiązka anteny, przerywana to wybrany azymut przekroju. Kliknij, aby wybrać azymut.</span></figcaption>
         <div class="seg" id="planZoom" style="align-self:flex-start">
           <button type="button" data-v="30">działka</button><button type="button" data-v="150">150 m</button><button type="button" data-v="500">500 m</button>
@@ -478,7 +510,7 @@ tbody tr{cursor:pointer}
         <div class="legend" id="planLeg"></div>
       </figure>
 
-      <figure>
+      <figure class="fig-dx">
         <figcaption><h2>Kierunki DX</h2><span class="d">Azymuty po wielkim kole (ortodromie) z działki do podanych miast. „Teren 10°” to wpływ rzeźby terenu względem płaskiego gruntu. RDF i SNR opisują odbiór (wyjaśnienie niżej, w części „Odbiór: RDF i SNR”). Kliknij wiersz, aby pokazać przekrój.</span></figcaption>
         <div class="tbl-wrap"><table>
           <thead><tr><th>Kierunek</th><th>Az.</th><th>dBi 5°</th><th>dBi 10°</th><th>dBi 20°</th><th title="Teren względem płaskiego gruntu przy 10°">Teren 10°</th><th title="Receiving Directivity Factor przy 10°">RDF 10°</th><th title="SNR sygnału 1 µV/m, SSB 2,5 kHz, przy 10°">SNR 10°</th></tr></thead>
@@ -497,7 +529,7 @@ tbody tr{cursor:pointer}
         <h2>Odbiór: RDF i SNR</h2>
         <p><b>RDF</b> (Receiving Directivity Factor) to zysk w kierunku stacji minus średni zysk anteny w całej górnej półprzestrzeni, liczony z tej samej charakterystyki NEC-2 z terenem. Gdy szum przychodzi z każdej strony po równo, różnica RDF dwóch anten to różnica ich SNR. Straty w gruncie i w kablu obniżają sygnał i szum po równo, więc RDF ich nie zawiera.</p>
         <p><b>SNR</b> jest liczony dla słabego sygnału DX o natężeniu 1 µV/m (0 dBµV/m) w paśmie SSB 2,5 kHz. Szum zewnętrzny to szum z działalności człowieka i galaktyczny według ITU-R P.372 dla wybranego otoczenia. Poziomy ITU są podane dla krótkiego pionowego monopola nad idealną ziemią, dlatego szum odbierany przez antenę skalowany jest jej średnim zyskiem względem takiego monopola. Opcjonalnie część zakłóceń (50 % w mieście i na osiedlu, 30 % na wsi) przychodzi nisko, z kierunku budynków w promieniu 100 m, ważona odwrotnością kwadratu odległości. Altany na działkach ROD liczą się z wagą 0,3 domu, bo są używane okresowo i mają mniej urządzeń. Do tego dochodzą szumy własne radia. Szum atmosferyczny (burze) zmienia się z porą roku i dnia i nie jest liczony. To przybliżenie, dobre do porównywania anten na tej samej działce, a nie do przewidywania dokładnej wartości SNR.</p>
-        <p class="muted">Czego nie ma w modelu: drzew, budynków, masztu i kabli zasilających, strat w materiale elementów i w układzie dopasowania. Izolacja drutu jest uwzględniona współczynnikiem skrócenia (NEC-2 nie modeluje izolacji bezpośrednio). Tryb „szybki model” to wcześniejszy model przybliżony, bez NEC. Silnik: nec2c, licencja GPL-3.0, źródło github.com/KJ7LNW/nec2c, skompilowany do WebAssembly.</p>
+        <p class="muted">Czego nie ma w samym NEC-2: drzew, budynków i akwenów (są tylko w poprawce od otoczenia), masztu i kabli zasilających, strat w materiale elementów i w układzie dopasowania. Izolacja drutu jest uwzględniona współczynnikiem skrócenia (NEC-2 nie modeluje izolacji bezpośrednio). Tryb „szybki model” to wcześniejszy model przybliżony, bez NEC. Silnik: nec2c, licencja GPL-3.0, źródło github.com/KJ7LNW/nec2c, skompilowany do WebAssembly.</p>
       </section>
     </div>
   </div>
@@ -1455,6 +1487,7 @@ function noiseModel(R,f){const E=NOISE_ENV[state.noise.env],lg=Math.log10(f),Fam
   return {Fa,avgDb:10*Math.log10(avg),nextDb:10*Math.log10(next),ntot,nf,houses:H.length,rods:H.filter(h=>h.rod).length,near:H.length?Math.min(...H.map(h=>h.d)):null,share,env:E.n,
     rdf:(az,el)=>gAt(R,az,el)-10*Math.log10(avg),snr:(az,el)=>snr(gAt(R,az,el))};}
 // ---- best layout for every DX direction: NEC-2 + terrain correction scored once per layout, then every mast (or, without masts, every 2.5 m point in the parcel) checked for fit
+const DXCODE=['W1','W6','KP4','PY','ZS','VK6','VK2','JA'];
 const DXSHORT=['USA wsch. (W1)','USA zach. (W6)','Karaiby','Ameryka Płd.','Afryka Płd.','VK6','VK2','Japonia'];
 const DXRES={};let dxRun=0;
 function dxKey(t){const p=P[t],c=[state.ground,state.coax.type,state.coax.len,p.f];
@@ -1483,12 +1516,12 @@ function dxPositions(tab){const Pg=SITECFG.parcel,need=dxNeed(),out=[];
 // best layout per DX direction, kept separately for every mast (M1, M2, M3 in order) and for the best new support point;
 // the recommended one is the best mast; a new point is shown only when no mast fits or it beats the best mast by more than 0.3 dB
 function dxWhy(t,mid){const o=mastOcc(mid);if(t==='dipole'&&o.main&&NO_DIPOLE.has(o.main))return 'wisi na nim delta, dipola nie da się dołożyć';return 'nie mieści się (granica działki, zabudowania albo drzewa)';}
-function dxAcc(n){const best={},why={};
-  return {why,add(q,mk,gi,bonus=0){const K=q.mast||'new',B=best[K]||(best[K]=Array(n).fill(null));let r=null;
+function dxAcc(n){const best={},why={},extra=Array.from({length:n},()=>[]);
+  return {why,extra,add(q,mk,gi,bonus=0){const K=q.mast||'new',B=best[K]||(best[K]=Array(n).fill(null));let r=null;
       for(let i=0;i<n;i++){const g0=gi(i),g=g0+bonus;if(!B[i]||g>B[i].gs){r=r||mk();B[i]={...r,q,g:g0,gs:g};}}},
     res(t){const M=HAS_MASTS?SITECFG.masts:[];return Array.from({length:n},(_,i)=>{
       const opts=M.map(m=>(best[m.id]&&best[m.id][i])||{none:true,q:{mast:m.id,label:'maszt '+m.id},why:why[m.id]||dxWhy(t,m.id)});
-      const bm=opts.filter(o=>!o.none).sort((a,b)=>b.gs-a.gs)[0]||null,nw=best.new&&best.new[i];
+      opts.push(...extra[i]);const bm=opts.filter(o=>!o.none).sort((a,b)=>b.gs-a.gs)[0]||null,nw=best.new&&best.new[i];
       if(nw&&(!bm||nw.gs>bm.gs+0.3))opts.push({...nw,gain:bm?nw.g-bm.g:null});
       return {opts,def:bm?opts.indexOf(bm):opts.findIndex(o=>!o.none)};});}};}
 function feedLossOf(t,p,Z){const cl=g=>coaxLoss(state.coax.type,p.f,state.coax.len,Math.min(0.999,g)).TL,gm=(Z,R0)=>Math.hypot(Z.R-R0,Z.X)/Math.hypot(Z.R+R0,Z.X);
@@ -1514,7 +1547,26 @@ async function optimizeDX(t){const my=++dxRun,p0=P[t],lam=299.8/p0.f,gr=GROUNDS[
     pos.forEach((q,qi)=>{if(!q.mast||!SITECFG.parcel)return;const Dp=[];for(let a=0;a<360;a++)Dp[a]=parcelRay(q.pos,a)-FIT_MARGIN;
       const fitsP=rows.some(r=>{for(let b=0;b<360;b++){const a1=norm(b-Math.floor(r.sp/2)),a2=norm(a1+r.sp);if(Dp[a1]>=r.reach&&Dp[a2]>=r.reach)return true;}return false;});
       acc.why[q.mast]=fitsP?'w granicach działki by się zmieścił, ale każde ułożenie ramion zahacza o drzewa albo zabudowania (drut musi być 0,5 m nad koroną i 1 m nad dachem)':`ramiona (${fmtS(rows[rows.length-1].reach)}–${fmtS(rows[0].reach)} m w rzucie) nie mieszczą się w granicach działki nawet jako V 30°`;});
-    DXRES.dipole=acc.res('dipole');const fitsAt={length:nfit};
+    // dipole strung between masts: feed on one mast and the ends tied to the two others (the V angle follows from the mast layout),
+    // or a straight dipole with its centre in the middle of the span between two masts; an arm must end before its mast (the rest is rope)
+    const MMr=[];if(HAS_MASTS&&SITECFG.masts.length>=2){const ms=SITECFG.masts,azOf=(a,b)=>norm(Math.round(Math.atan2(b[0]-a[0],b[1]-a[1])/RAD)),dist=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1]),cfg=[];
+      if(ms.length>=3)for(const c of ms){const [A,B]=ms.filter(m=>m!==c),zA=azOf(c.pos,A.pos),zB=azOf(c.pos,B.pos),d=norm(zB-zA),[e1,e2,a1,sp]=d<=180?[A,B,zA,d]:[B,A,zB,360-d];
+        cfg.push({kind:'v',c,e1,e2,a1,sp,pos:c.pos,d1:dist(c.pos,e1.pos),d2:dist(c.pos,e2.pos),label:`zasilanie na ${c.id}, końce do ${e1.id} i ${e2.id}`});}
+      for(let x=0;x<ms.length;x++)for(let y=x+1;y<ms.length;y++){const A=ms[x],B=ms[y],mid=[(A.pos[0]+B.pos[0])/2,(A.pos[1]+B.pos[1])/2],L=dist(A.pos,B.pos)/2;
+        cfg.push({kind:'span',e1:A,e2:B,a1:azOf(mid,A.pos),sp:180,pos:mid,d1:L,d2:L,label:`prosty, zasilanie w połowie między ${A.id} i ${B.id}, końce do ${A.id} i ${B.id}`});}
+      let k=0;for(const m of cfg){m.a2=norm(m.a1+m.sp);m.beam=norm(m.a1+Math.floor(m.sp/2));
+        if(m.kind==='v'){const o=mastOcc(m.c.id);if(o.main&&NO_DIPOLE.has(o.main)){m.why=`na ${m.c.id} wisi delta`;MMr.push(m);continue;}}
+        let r=rows.find(q=>q.sp===Math.round(m.sp/5)*5&&Math.abs(q.sp-m.sp)<0.5);
+        if(!r){hint.textContent=`Liczę NEC-2… dipol między masztami, V ${m.sp}° (${++k})`;const sp=Math.max(10,m.sp),res=await necAnalyze('dipole',{...pc0,spread:sp},wireRadius(),gr);if(my!==dxRun)return;
+          const loss=feedLossOf('dipole',p0,res.Z);r={sp,reach:res.info.Le*vf/2*Math.cos(res.info.droop*RAD),loss,G1:dxScore(res,reduceSegs(res.segs,lam),m.beam,o,TT,loss)};}
+        m.reach=r.reach;m.loss=r.loss;m.g=r.G1||AZ.map((_,i)=>gAt(r,m.beam,i));m.rope1=m.d1-r.reach;m.rope2=m.d2-r.reach;
+        const f1=SITECFG.parcel?dxFree(m.pos,m.a1,x=>h-x*tn,need):Infinity,f2=SITECFG.parcel?dxFree(m.pos,m.a2,x=>h-x*tn,need):Infinity;
+        if(m.rope1<0||m.rope2<0)m.why=`ramię (${fmtS(r.reach)} m w rzucie) dłuższe niż odległość do ${m.rope1<0?m.e1.id:m.e2.id} (${fmtS(m.rope1<0?m.d1:m.d2)} m) o ${fmtS(-Math.min(m.rope1,m.rope2))} m`;
+        else if(f1<r.reach||f2<r.reach)m.why='drut zahacza o drzewa albo zabudowania';
+        MMr.push(m);}
+      AZ.forEach((_,i)=>{const ok=MMr.filter(m=>!m.why);if(!ok.length)return;const b=ok.reduce((a,c)=>c.g[i]>a.g[i]?c:a);
+        acc.extra[i].push({sp:b.sp,beam:b.beam,a1:b.a1,a2:b.a2,reach:b.reach,loss:b.loss,ropes:[b.rope1,b.rope2],q:{mast:b.kind==='v'?b.c.id:null,pos:b.pos,label:'między masztami: '+b.label,mm:true},g:b.g[i],gs:b.g[i]});});}
+    DXRES.dipole=acc.res('dipole');DXRES.dipole.mm=MMr;const fitsAt={length:nfit};
     if(!fitsAt.length){const r30=rows[rows.length-1];DXRES.dipole.why=`Ramię ma w rzucie ${fmtS(rows[0].reach)} m (V 30°: ${fmtS(r30.reach)} m), a z żadnego ${HAS_MASTS?'masztu ani nowego punktu':'punktu działki'} nie ma tyle wolnego miejsca w dwóch kierunkach naraz (granica działki, zabudowania, drzewa). Spróbuj odwróconego V, wyższego pasma albo zagięcia końców (tego strona nie liczy).`;}
   } else if(t==='delta'){const vf=dVF(p0),B=[];for(let b=1;b<=Math.min(5,p0.apex-1)+1e-9;b+=1)B.push(b);const F=['corner','side','base'];let k=0;
     for(const feed of F)for(const bottom of B){hint.textContent=`Liczę NEC-2… wariant ${++k} z ${F.length*B.length}`;const res=await necAnalyze('delta',{...pc0,bottom,feed},wireRadius(),gr);if(my!==dxRun)return;
@@ -1542,14 +1594,19 @@ async function optimizeDX(t){const my=++dxRun,p0=P[t],lam=299.8/p0.f,gr=GROUNDS[
   finally{btn.disabled=false;}}
 function dxLabel(t,r){if(!r)return 'nie mieści się w działce z żadnego miejsca'+(DXRES[t]&&DXRES[t].why?'. '+DXRES[t].why:'');
   const busy=()=>{if(!r.q.mast)return '';const o=mastOcc(r.q.mast),x=[];if(o.main&&o.main!==t)x.push(ANTNAME[o.main]||o.main);if(t==='delta'&&o.dipole)x.push('dipol');return x.length?` <span class="warn">(zdejmie z masztu: ${x.join(', ')})</span>`:'';};
-  if(t==='dipole')return `<b>${r.q.label}</b>, ramiona na ${r.a1}° i ${r.a2}°${r.sp<180?` (V ${r.sp}°), wiązka ${r.beam}° i ${(r.beam+180)%360}°`:` (prosty), wiązka ${r.beam%180}° i ${r.beam%180+180}°`}`;
+  if(t==='dipole')return `<b>${r.q.label}</b>${r.ropes?` (liny od końców do masztów ${fmtS(r.ropes[0])} m i ${fmtS(r.ropes[1])} m)`:''}, ramiona na ${r.a1}° i ${r.a2}°${r.sp<180?` (V ${r.sp}°), wiązka ${r.beam}° i ${(r.beam+180)%360}°`:` (prosty), wiązka ${r.beam%180}° i ${r.beam%180+180}°`}`;
   if(t==='delta')return `<b>${r.q.label}</b>${busy()}, dolny drut ${r.orient}°–${r.orient+180}°, dół ${r.bottom.toFixed(1)} m, zasilanie: ${FEEDNAME[r.feed]}${P.delta.mb?'':', balun '+r.balun+':1'}`;
   const C=P.hdelta.corners,nm=j=>{const c=C[(r.rot+j)%3];return c.src!=='pt'?c.src:'narożnik '+((r.rot+j)%3+1);};return r.fp==='corner'?`zasilanie w narożniku <b>${nm(0)}</b>`:`zasilanie na środku boku <b>${nm(0)}–${nm(1)}</b>`;}
 function renderDX(t){const el=document.querySelector(`.dxlist[data-t="${t}"]`),R=DXRES[t];if(!el)return;if(!R){el.innerHTML='';return;}const on=state.dxOn&&state.dxOn[t];
-  el.innerHTML=R.map((d,i)=>`<div class="dxdir"><div class="dxh">${DXSHORT[i]} ${DX[i][1]}°</div>`+(d.opts.some(o=>o&&!o.none)?d.opts.map((r,k)=>r.none?`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`:
+  const mm=R.mm&&R.mm.length?`<div class="dxdir"><div class="dxh">Dipol rozpięty między masztami</div>`+R.mm.map((m,k)=>{if(m.why)return `<div class="dxno"><b>${m.label}</b>${m.sp<180?` (V ${m.sp}°)`:''}: ${m.why}</div>`;
+      const bi=m.g.reduce((b,g,i)=>g>m.g[b]?i:b,0);return `<button type="button" class="dxrow${on==='mm:'+k?' on':''}" data-t="${t}" data-mm="${k}"><b>${m.label}</b>, ramiona na ${m.a1}° i ${m.a2}°${m.sp<180?` (V ${m.sp}°)`:''}, liny ${fmtS(m.rope1)} i ${fmtS(m.rope2)} m<span class="ls"> · straty zasilania ${fmtS(m.loss)} dB</span>
+        <span class="dxg">${m.g.map((g,i)=>`<span${i===bi?' class="top"':''}>${DXCODE[i]} ${fmtS(g)}</span>`).join('')}</span></button>`;}).join('')+'</div>':'';
+  el.innerHTML=mm+R.map((d,i)=>`<div class="dxdir"><div class="dxh">${DXSHORT[i]} ${DX[i][1]}°</div>`+(d.opts.some(o=>o&&!o.none)?d.opts.map((r,k)=>r.none?`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`:
     `<button type="button" class="dxrow${on===i+':'+k?' on':''}" data-t="${t}" data-i="${i}" data-k="${k}"><span class="g">${fmtS(r.g)} dBi</span>${k===d.def&&d.opts.length>1?'<span class="best">polecany</span> ':''}${dxLabel(t,r)}<span class="ls"> · straty zasilania ${fmtS(r.loss)} dB${r.gain!=null?` · o ${fmtS(r.gain)} dB więcej niż najlepszy maszt`:''}</span></button>`).join(''):
     `<div class="dxno">${dxLabel(t,null)}</div>`+d.opts.filter(o=>o&&o.none).map(r=>`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`).join(''))+'</div>').join('');}
-function applyDX(t,i,k){const d=DXRES[t]&&DXRES[t][i],r=d&&d.opts[k];if(!r||r.none)return;state.dxOn=state.dxOn||{};state.dxOn[t]=i+':'+k;let note='';
+function applyMM(t,k){const m=DXRES[t]&&DXRES[t].mm&&DXRES[t].mm[k];if(!m||m.why)return;const i=m.g.reduce((b,g,j)=>g>m.g[b]?j:b,0);
+  applyDX(t,i,-1,{sp:m.sp,a1:m.a1,a2:m.a2,beam:m.beam,q:{mast:m.kind==='v'?m.c.id:null,pos:m.pos,label:m.label}});state.dxOn[t]='mm:'+k;renderDX(t);}
+function applyDX(t,i,k,rr){const d=DXRES[t]&&DXRES[t][i],r=rr||(d&&d.opts[k]);if(!r||r.none)return;state.dxOn=state.dxOn||{};state.dxOn[t]=i+':'+k;let note='';
   if(t==='dipole'){if(r.q.mast){const x=assignMast('dipole',r.q.mast);note=x&&x.err?x.err:'';}else{delete state.mastAssign.dipole;P.dipole.cx=r.q.pos[0];P.dipole.cy=r.q.pos[1];}P.dipole.spread=r.sp;P.dipole.arm1=r.a1;state.fitMsg='';}
   else if(t==='delta'){if(r.q.mast){const x=assignMast('delta',r.q.mast);note=typeof x==='string'?x:'';}else{delete state.mastAssign.delta;P.delta.cx=r.q.pos[0];P.delta.cy=r.q.pos[1];}Object.assign(P.delta,{bottom:r.bottom,feed:r.feed,orient:r.orient},P.delta.mb?{}:{balun:r.balun});}
   else{const C=P.hdelta.corners;P.hdelta.corners=[0,1,2].map(j=>C[(r.rot+j)%3]);P.hdelta.feedPos=r.fp;{const key=DXRES.hdelta.key;DXRES.hdelta=DXRES.hdelta.map(q=>({...q,opts:q.opts.map(o=>o&&{...o,rot:(o.rot-r.rot+3)%3})}));DXRES.hdelta.key=key;}}
@@ -1557,7 +1614,7 @@ function applyDX(t,i,k){const d=DXRES[t]&&DXRES[t][i],r=d&&d.opts[k];if(!r||r.no
   const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h)h.textContent=`Ustawione dla ${DXSHORT[i]} (${DX[i][1]}°): ${r.q&&r.q.label?r.q.label:'delta pozioma'}. `+(note?note+' ':'')+'Pełny wynik z pozostałymi antenami i metalem widać na wykresach.';
   renderDX(t);recompute();}
 document.addEventListener('click',e=>{const g=e.target.closest('.dxgo');if(g){if(!NEC.ok){document.querySelector(`.dxhint[data-t="${g.dataset.t}"]`).textContent='Silnik NEC-2 jeszcze się ładuje.';return;}optimizeDX(g.dataset.t);return;}
-  const r=e.target.closest('.dxrow');if(r)applyDX(r.dataset.t,+r.dataset.i,+(r.dataset.k||0));});
+  const r=e.target.closest('.dxrow');if(r){if(r.dataset.mm!=null)applyMM(r.dataset.t,+r.dataset.mm);else applyDX(r.dataset.t,+r.dataset.i,+(r.dataset.k||0));}});
 const cdiv=(k,Z)=>{const d=Z.R*Z.R+Z.X*Z.X;return {R:k*Z.R/d,X:-k*Z.X/d};};
 // Cubex manual, Table I: λ/4 of 75 Ω RG-11 (VF 0.66) on 10/12/15 m, 50 Ω directly on 17/20 m
 const QSTUB={'10':172.72,'12':202.74,'15':233.68};
