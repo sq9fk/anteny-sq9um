@@ -39,6 +39,8 @@ Siostrzany projekt dla działki SQ9FK w JO90HI: [sq9fk.github.io/anteny-sq9fk](h
 
 - **Zasilanie:** delta z balunem 4:1 albo 1:1 (SWR liczony względem 200 Ω albo 50 Ω). Dipol w trzech wariantach: balun 1:1, bez baluna z automatycznym tunerem eATU (SP9MK) przy antenie albo bez baluna. W wariantach bez baluna NEC-2 modeluje ekran kabla, po którym płynie prąd wspólny. Dla eATU strona podaje potrzebne L i C oraz straty w dopasowaniu.
 - **Kabel zasilający:** RG-58 Flex albo RF-7 o wybranej długości. Strona liczy tłumienie, dodatkowe straty od niedopasowania i SWR przy radiu, a wykresy uwzględniają straty w kablu. W wariantach bez baluna długość kabla jest też długością ekranu, po którym płynie prąd wspólny.
+- **Plan działki SQ9UM:** granica działki (ok. 33 × 17 m), trzy maszty (M1: Yagi 5 el. 15 m, M2: A3S, M3: Yagi 4 el. 15 m) oraz przyczepa, altana i garaż. Położenie wzięte ze zrzutu z Geoportalu. Wiązka rysowana jest od masztu danej anteny, a przycisk „ustaw z planu działki” wstawia do analizy drugiej anteny prawdziwą odległość i kierunek między masztami (np. M1–M2: 11 m, 169°; M1–M3: 24 m, 91°). Plan ma trzy skale: działka, 150 m i 500 m. Maszty mają regulowaną wysokość, domyślnie 7 m. Każdą antenę (także deltę, dipol, Yagi 10 m i hexbeam) można przypisać do dowolnego masztu albo do środka działki. Od masztu liczone są odległości do drugiej anteny i do metalowych obiektów.
+- **Metal na działce:** domek (metalowa przyczepa holenderska, ok. 3 m) i garaż blaszany (2,15 m) są liczone w NEC jako siatki przewodów, dla anten na masztach M1–M3. Drewniana altana nie jest liczona. Przykład: przy Yagi 4 el. na M3, 4–5 m od domku, F/R spada z 21 do 20 dB.
 - **Budynki 3D:** zabudowa w promieniu 500 m z modeli LoD1 2024 GUGiK, z wysokościami pomierzonymi lidarem, wliczona do poprawki od otoczenia. Do tego plan otoczenia z zaznaczoną wiązką.
 - **Druty DX-Wire:** UL, FL, FS, HDL, PREMIUM, goły drut albo własny współczynnik skrócenia izolacji.
 - **Grunt:** słaby, przeciętny albo dobry.
@@ -47,6 +49,8 @@ Siostrzany projekt dla działki SQ9FK w JO90HI: [sq9fk.github.io/anteny-sq9fk](h
 - **Linki do zakładek:** np. `#delta`, `#dipole`, `#y15`, `#y10`, `#a3s`, `#hex`.
 
 ![Charakterystyka pionowa z profilem terenu](docs/przekroj.png)
+
+![Plan działki z masztami](docs/plan.png)
 
 ---
 
@@ -83,7 +87,7 @@ Numeryczny model terenu (NMT) **GUGiK** jest pobierany usługą `services.gugik.
 
 - Terenu nie liczy NEC. Poprawka od rzeźby terenu jest przybliżeniem, podobnie jak w HFTA. Najmniej pewna jest dla anten zawieszonych bardzo nisko (poniżej ~0,1 λ).
 - Budynki wchodzą tylko do poprawki od terenu, jako przeszkody z dyfrakcją na krawędzi (od 30 m), a nie do obliczeń NEC. Najbliższy budynek stoi ok. 130 m od działki, więc nie ma sprzężenia w polu bliskim. Wysokości pochodzą z pomiaru lidarowego (LoD1 2024).
-- Model nie uwzględnia drzew, masztu i kabla przy antenie z balunem, strat w materiale elementów ani układów dopasowania (hairpin, gamma).
+- Model nie uwzględnia drzew, masztów, odciągów, kabla przy antenie z balunem ani altany, strat w materiale elementów ani układów dopasowania (hairpin, gamma).
 - NEC-2 nie modeluje izolacji drutu. Uwzględnia ją współczynnik skrócenia liczony z geometrii przewodu, bo producent DX-Wire go nie podaje. Zostaw 3–5% zapasu i dotnij analizatorem.
 - Wymiary Yagi dobrano w NEC-2 dla rurek Ø 20 mm (15 m) i Ø 16 mm (10 m). Przed budową uwzględnij mocowania elementów do boomu.
 - Hexbeam: wymiary 20–10 m z tabeli G3TXQ, 6 m przeskalowane z 10 m. Model liczy jedno pasmo naraz, bez drutów pozostałych pasm, dlatego driver jest domyślnie dostrajany do rezonansu.

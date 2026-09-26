@@ -105,9 +105,9 @@ function wireSegs(wires){const segs=[];
   return segs;}
 
 // ---- analysis: tune to resonance (wire antennas), then pattern over Sommerfeld-Norton ground
-async function necAnalyze(t,p,wireR,ground){
+async function necAnalyze(t,p,wireR,ground,extra){
   const gr={er:ground.er,sig:ground.sig};
-  const key=JSON.stringify([NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.design,p.band,wireR,gr]);
+  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.design,p.band,wireR,gr]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   let scale=1, tuned=false; const geomOf=s=>necGeom(t,p,s,wireR);
   if(t==='delta'||t==='dipole'||(t==='hex'&&p.tune)){ // secant search for X=0 at the resonance frequency
@@ -116,12 +116,14 @@ async function necAnalyze(t,p,wireR,ground){
     for(let k=0;k<6&&Math.abs(x1)>1;k++){if(x1===x0)break;const s2=Math.min(1.3,Math.max(0.75,s1-x1*(s1-s0)/(x1-x0)));s0=s1;x0=x1;s1=s2;x1=await X(s1);}
     scale=s1; tuned=true;
   }
-  const g=geomOf(scale);
+  const g=geomOf(scale); let metalSkipped=false;
+  if(extra){if(minWireDist(g.wires,extra.wires)<0.3){metalSkipped=true;extra=null;}else g.wires=g.wires.concat(extra.wires);}
   const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,gr,['RP 0 91 72 1001 0 0 1 5']));
   const Z=parseZ(out), segs=wireSegs(g.wires), cur=parseCurrents(out,segs.length), pat=parsePattern(out);
   segs.forEach((s,i)=>{s.I=1;s.Ic=cur[i]||[0,0];});
-  let wz=0,ws=0;segs.forEach(s=>{const a=Math.hypot(...s.Ic)*Math.hypot(...s.dl);wz+=a*s.r[2];ws+=a;});
-  const res={Z,segs,zc:wz/ws,pat,info:g.info,scale,tuned};
+  const nAnt=extra?segs.length-wireSegs(extra.wires).length:segs.length;
+  let wz=0,ws=0;segs.slice(0,nAnt).forEach(s=>{const a=Math.hypot(...s.Ic)*Math.hypot(...s.dl);wz+=a*s.r[2];ws+=a;});
+  const res={Z,segs,zc:wz/ws,pat,info:g.info,scale,tuned,metalSkipped};
   NEC.cache.set(key,res); if(NEC.cache.size>60)NEC.cache.delete(NEC.cache.keys().next().value);
   return res;
 }
@@ -140,13 +142,13 @@ function rotateSegs(segs,beam){const b=beam*Math.PI/180,c=Math.cos(b),s=Math.sin
 function necGeom(t,p,s,r){return t==='delta'?necGeomDelta(p,s,r):t==='dipole'?necGeomDipole(p,s,r):t==='hex'?necGeomHex(p,s):necGeomYagi(t,p);}
 function geomRadius(g){let m=0;g.wires.forEach(w=>[w.a,w.b].forEach(v=>m=Math.max(m,Math.hypot(v[0],v[1]))));return m;}
 // Main antenna with a second (passive) antenna nearby. nb:{type,p,beam,dist,brg,term}; mainBeam = compass azimuth of main beam.
-async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nb){
+async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nb,extra){
   const gr={er:ground.er,sig:ground.sig};
-  const base=await necAnalyze(t,p,wireR,ground);
+  const base=await necAnalyze(t,p,wireR,ground,extra);
   const nbBase=await necAnalyze(nb.type,nb.p,wireR,ground);
   const g1=necGeom(t,p,base.scale,wireR), g2=necGeom(nb.type,nb.p,nbBase.scale,wireR);
 
-  const key=JSON.stringify(['nb',NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.design,p.band,wireR,gr,mainBeam,nb.type,nb.p,nb.beam,nb.dist,nb.brg,nb.term]);
+  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.design,p.band,wireR,gr,mainBeam,nb.type,nb.p,nb.beam,nb.dist,nb.brg,nb.term]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   // neighbour: rotate by (its beam − main beam) clockwise, then place at its position expressed in the main antenna frame
   const rel=(nb.beam-mainBeam)*Math.PI/180, c=Math.cos(rel), sn=Math.sin(rel);
@@ -154,7 +156,8 @@ async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nb){
   const pb=(nb.brg-mainBeam)*Math.PI/180, off=[nb.dist*Math.sin(pb),nb.dist*Math.cos(pb),0];
   const w2=g2.wires.map(w=>({a:rot(w.a).map((v,i)=>v+off[i]),b:rot(w.b).map((v,i)=>v+off[i]),n:w.n,r:w.r}));
   const minD=minWireDist(g1.wires,w2); if(minD<0.5)return {overlap:true,minD};
-  const wires=g1.wires.concat(w2), nbTag=g1.wires.length+g2.feed.tag;
+  if(extra&&(base.metalSkipped||minWireDist(w2,extra.wires)<0.3))extra=null;
+  const wires=g1.wires.concat(w2,extra?extra.wires:[]), nbTag=g1.wires.length+g2.feed.tag;
   const Rl=nb.term==='50'?50:1e9;
   const out=await necRun(wiresToDeck(wires,g1.feed,p.f,gr,['RP 0 91 72 1001 0 0 1 5'],[`LD 4 ${nbTag} ${g2.feed.seg} ${g2.feed.seg} ${Rl} 0`]));
   const Z=parseZ(out), segs=wireSegs(wires), cur=parseCurrents(out,segs.length), pat=parsePattern(out);
@@ -221,4 +224,19 @@ function necGeomHex(p,scale=1){
     {a:V(180),b:V(240),n:n(R),r:wr},{a:V(240),b:along(V(240),V(300),tr),n:n(tr),r:wr} // reflector, left
   ];
   return {wires,feed:{tag:1,seg:1},info:{kind:'hex',height:p.height,zBand:z,R,band:p.band,lam,dims:H,dHalf:R+td,tail:td,gap:R-td-tr}};
+}
+
+// Metal objects (e.g. a steel trailer, a tin garage) as NEC wire grids. poly: 4 corners in the antenna frame [m], z0..z1 height.
+function wireBox(poly,z0,z1,step=1.0,r=0.005){
+  const len=i=>{const a=poly[i],b=poly[(i+1)%4];return Math.hypot(b[0]-a[0],b[1]-a[1]);};
+  const nA=Math.max(1,Math.round(Math.max(len(0),len(2))/step)), nB=Math.max(1,Math.round(Math.max(len(1),len(3))/step)), ns=[nA,nB,nA,nB];
+  const lerp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+  const per=[];for(let i=0;i<4;i++)for(let k=0;k<ns[i];k++)per.push(lerp(poly[i],poly[(i+1)%4],k/ns[i]));
+  const nz=Math.max(1,Math.round((z1-z0)/step)),zs=[...Array(nz+1)].map((_,i)=>z0+(z1-z0)*i/nz),w=[];
+  const P=(q,z)=>[q[0],q[1],z];
+  for(const z of zs)for(let i=0;i<per.length;i++)w.push({a:P(per[i],z),b:P(per[(i+1)%per.length],z),n:1,r});   // rings
+  for(const q of per)for(let j=0;j<nz;j++)w.push({a:P(q,zs[j]),b:P(q,zs[j+1]),n:1,r});                          // posts
+  for(let k=1;k<nA;k++){const a=lerp(poly[0],poly[1],k/nA),b=lerp(poly[3],poly[2],k/nA);                          // roof ribs
+    w.push({a:P(a,z1),b:P(b,z1),n:Math.max(1,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/step)),r});}
+  return w;
 }
