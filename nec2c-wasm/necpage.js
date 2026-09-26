@@ -28,10 +28,10 @@ const necRun=deck=>necCall({deck});
 const fx=v=>(Math.abs(v)<1e-9?0:v).toFixed(5);
 
 // ---- geometry → NEC deck. Antenna frame: main beam toward +y (north), z up.
-function wiresToDeck(wires,feed,f,gr,tail,loads){
+function wiresToDeck(wires,feed,f,gr,tail,loads,free){
   const L=['CM JO90HH','CE'];
   wires.forEach((w,i)=>L.push(`GW ${i+1} ${w.n} ${fx(w.a[0])} ${fx(w.a[1])} ${fx(w.a[2])} ${fx(w.b[0])} ${fx(w.b[1])} ${fx(w.b[2])} ${fx(w.r)}`));
-  L.push('GE 1',...(loads||[]),`GN 2 0 0 0 ${gr.er} ${gr.sig}`,...(NEC.ek?['EK 0']:[]),`EX 0 ${feed.tag} ${feed.seg} 0 1 0`,`FR 0 1 0 0 ${f.toFixed(5)} 0`,...tail,'EN');
+  L.push(free?'GE 0':'GE 1',...(loads||[]),...(free?[]:[`GN 2 0 0 0 ${gr.er} ${gr.sig}`]),...(NEC.ek?['EK 0']:[]),`EX 0 ${feed.tag} ${feed.seg} 0 1 0`,`FR 0 1 0 0 ${f.toFixed(5)} 0`,...tail,'EN');
   return L.join('\n')+'\n';
 }
 function segCount(len,lam,min){return Math.max(min,Math.ceil(len/(lam/60)));}
@@ -239,4 +239,18 @@ function wireBox(poly,z0,z1,step=1.0,r=0.005){
   for(let k=1;k<nA;k++){const a=lerp(poly[0],poly[1],k/nA),b=lerp(poly[3],poly[2],k/nA);                          // roof ribs
     w.push({a:P(a,z1),b:P(b,z1),n:Math.max(1,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/step)),r});}
   return w;
+}
+
+// "Catalogue" gain: the same antenna alone in free space (no ground, no metal, no neighbour).
+async function necFreeSpace(t,p,wireR,scale){
+  const key=JSON.stringify(['fs',NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.height,p.shape,p.design,p.band,wireR,scale]);
+  if(NEC.cache.has(key))return NEC.cache.get(key);
+  const g=necGeom(t,p,scale,wireR);
+  const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,{er:1,sig:0},['RP 0 37 72 1000 0 0 5 5'],null,true));
+  let best={g:-999,th:90,ph:90},fwd=null,back=null;const i=out.indexOf('RADIATION PATTERNS');
+  for(const l of out.slice(i).split('\n')){const q=l.trim().split(/\s+/);if(q.length>=5&&/^-?\d+\.\d+$/.test(q[0])&&/^-?\d+\.\d+$/.test(q[1])){
+    const th=parseFloat(q[0]),ph=parseFloat(q[1]),gv=parseFloat(q[4]);if(gv>best.g)best={g:gv,th,ph};
+    if(Math.abs(th-90)<0.01&&Math.abs(ph-90)<0.01)fwd=gv;if(Math.abs(th-90)<0.01&&Math.abs(ph-270)<0.01)back=gv;}}
+  const res={max:best.g,fwd,fb:(fwd!=null&&back!=null)?fwd-back:null};
+  NEC.cache.set(key,res);return res;
 }

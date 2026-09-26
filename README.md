@@ -25,6 +25,8 @@ Siostrzany projekt dla działki SQ9FK w JO90HI: [sq9fk.github.io/anteny-sq9fk](h
 | **Cushcraft A3S** | 20 / 15 / 10 m | wysokość, azymut co 1° |
 | **Hexbeam** G3TXQ (SP7IDX) | 20 / 17 / 15 / 12 / 10 / 6 m | wysokość, azymut co 1°, opcjonalne dostrojenie drivera do rezonansu |
 
+**Zysk katalogowy:** zysk w wolnej przestrzeni (dBi i dBd, dla anten kierunkowych także F/B) liczony w NEC-2, dla porównania z danymi producentów i z zyskiem nad gruntem.
+
 **Wyniki:**
 
 - mapa nieba (zysk w każdym kierunku i przy każdym kącie elewacji),
