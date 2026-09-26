@@ -18,7 +18,8 @@ Siostrzany projekt dla działki SQ9FK w JO90HI: [sq9fk.github.io/anteny-sq9fk](h
 
 | Zakładka | Pasma | Parametry |
 |---|---|---|
-| **Delta** (pionowa polaryzacja) | 80 m, 40 m, dowolny rezonans | wysokość wierzchołka i dolnego drutu, punkt zasilania (narożnik, ¼λ od góry, środek dołu), azymut co 1° |
+| **Delta** (pionowa polaryzacja) | 80 m, 40 m, dowolny rezonans | wysokość wierzchołka i dolnego drutu, punkt zasilania (narożnik, ¼λ od góry, środek dołu), azymut co 1°; tryb wielopasmowy: pętla pełnofalowa na 80 albo 40 m, praca na pasmach 80–10 m z balunem 4:1 i tunerem przy radiu albo eATU przy antenie; najlepsze ułożenie liczone w NEC-2 |
+| **Delta pozioma** | 80–10 m z tunerem | pętla rozpięta na trzech punktach (maszty albo dowolne miejsca na działce, z wysokością każdego narożnika), zasilanie w narożniku albo na środku boku, balun 4:1 z tunerem przy radiu albo eATU przy antenie |
 | **Dipol** | 80 / 40 / 20 m, dowolny rezonans | wysokość, płaski lub odwrócone V, obrót co 1°, kąt między ramionami w rzucie z góry 30–180° (dipol zgięty w V), dopasowanie do działki |
 | **Yagi 15 m** | 21,2 MHz | 4 lub 5 elementów, wysokość, azymut co 1° |
 | **Yagi 10 m** | 28,5 MHz | 5 elementów, wysokość, azymut co 1° |
@@ -41,17 +42,20 @@ Siostrzany projekt dla działki SQ9FK w JO90HI: [sq9fk.github.io/anteny-sq9fk](h
 **Dodatkowo:**
 
 - **Zasilanie:** delta z balunem 4:1 albo 1:1 (SWR liczony względem 200 Ω albo 50 Ω). Dipol w trzech wariantach: balun 1:1, bez baluna z automatycznym tunerem eATU (SP9MK) przy antenie albo bez baluna. W wariantach bez baluna NEC-2 modeluje ekran kabla, po którym płynie prąd wspólny. Dla eATU strona podaje potrzebne L i C oraz straty w dopasowaniu.
+- **Odbiór: RDF i SNR.** RDF (Receiving Directivity Factor) to zysk w kierunku stacji minus średni zysk anteny w górnej półprzestrzeni, z charakterystyki NEC-2 z terenem. SNR jest liczony dla sygnału 1 µV/m w paśmie SSB 2,5 kHz. Szum zewnętrzny pochodzi z ITU-R P.372 (miasto, osiedle, wieś, cicha wieś; szum z działalności człowieka i galaktyczny), a szumy radia z podanej liczby szumowej. Opcjonalnie część zakłóceń przychodzi nisko z kierunku domów w promieniu 100 m (z modeli LoD1). Strona pokazuje też, o ile szum z zewnątrz przewyższa szumy radia, czyli czy straty anteny w ogóle mają znaczenie przy odbiorze. RDF i SNR są w tabeli DX i we wskaźnikach. To przybliżenie do porównywania anten na tej samej działce.
 - **Kabel zasilający:** RG-58 Flex albo RF-7 o wybranej długości. Strona liczy tłumienie, dodatkowe straty od niedopasowania i SWR przy radiu, a wykresy uwzględniają straty w kablu. W wariantach bez baluna długość kabla jest też długością ekranu, po którym płynie prąd wspólny.
+- **Najlepsze ułożenie delty (NEC-2):** wierzchołek zostaje na maszcie na wybranej wysokości, a strona sprawdza w NEC-2 wysokość dolnego drutu (co 0,5 m), punkt zasilania, balun 1:1 lub 4:1 i obrót co 3° (potem co 1°), z poprawką od terenu i budynków. Kryterium to średni zysk przy 5–15° w wybranym kierunku DX. Pod uwagę idą tylko układy, w których oba narożniki mieszczą się w działce, i opcjonalnie tylko z SWR ≤ 2. Plan działki pokazuje podstawę delty.
 - **Dipol w działce:** oba ramiona można obracać razem, zmieniać kąt między nimi w rzucie z góry (180° = prosty dipol, mniej = litera V) albo wpisać azymuty ramion wprost. Plan pokazuje ramiona od masztu (albo od wybranego punktu na działce) i ostrzega, gdy któreś wychodzi poza granicę. Przyciski „dopasuj kąt ramion” (przy zachowanym kierunku) i „najlepsze ułożenie” szukają najbardziej rozwartego układu, który mieści się w działce z zapasem 0,5 m. Zgięty dipol ma w NEC-2 własny rezonans, niższą impedancję i bardziej dookólną charakterystykę.
 - **Zakładka „Maszty”** (`#maszty`): rzut działki z masztami M1–M3 i lista masztów, na której ustawiasz, co na którym stoi, wraz z wysokością i kierunkiem wiązki. Zasady: na jednym maszcie jedna antena kierunkowa (Yagi 15 m 4 lub 5 el., Yagi 10 m, A3S, hexbeam, quad) albo delta. Dipol może wisieć na tym samym maszcie co Yagi, A3S, hexbeam lub quad, ale nie razem z deltą. Dla dipola pod anteną kierunkową strona podaje najmniejszy odstęp drutów i ostrzega, gdy spada poniżej 0,5 m. Obie Yagi 15 m (4 i 5 el.) mają osobne wysokości i azymuty, więc mogą stać na różnych masztach.
 - **Plan działki SQ9UM:** granica działki (ok. 33 × 17 m), trzy maszty (M1: Yagi 5 el. 15 m, M2: A3S, M3: Yagi 4 el. 15 m) oraz przyczepa, altana i garaż. Położenie wzięte ze zrzutu z Geoportalu. Wiązka rysowana jest od masztu danej anteny (odległości między masztami: M1–M2 11 m, 169°; M1–M3 24 m, 91°). Plan ma trzy skale: działka, 150 m i 500 m. Maszty mają regulowaną wysokość, domyślnie 7 m. Każdą antenę (także deltę, dipol, Yagi 10 m, hexbeam i quad) można przypisać do dowolnego masztu albo do środka działki. Od masztu liczone są odległości do pozostałych anten i do metalowych obiektów.
 - **Metal na działce:** domek (metalowa przyczepa holenderska, ok. 3 m) i garaż blaszany (2,15 m) są liczone w NEC jako siatki przewodów, dla anten na masztach M1–M3. Drewniana altana nie jest liczona. Przykład: przy Yagi 4 el. na M3, 4–5 m od domku, F/R spada z 21 do 20 dB.
 - **Budynki 3D:** zabudowa w promieniu 500 m z modeli LoD1 2024 GUGiK, z wysokościami pomierzonymi lidarem, wliczona do poprawki od otoczenia. Do tego plan otoczenia z zaznaczoną wiązką.
+- **Altany ROD:** działka leży w ogrodach działkowych, a altan i szop nie ma w modelach LoD1. 63 obiekty w promieniu ok. 100 m odczytałem z ortofotomapy GUGiK (WMS HighResolution) jako prostokąty, z wysokością szacowaną z powierzchni: do 12 m² 2,2 m, do 40 m² 3 m, większe 4 m. Są na planie, w poprawce od otoczenia i w modelu szumu (z wagą 0,3 domu). Najbliższa stoi ok. 8 m od środka działki, przy jej północnej granicy. Domyślne otoczenie szumowe dla tej działki to „wieś”.
 - **Druty DX-Wire:** UL, FL, FS, HDL, PREMIUM, goły drut albo własny współczynnik skrócenia izolacji.
 - **Grunt:** słaby, przeciętny albo dobry.
 - **Promień analizy terenu:** 3 km (dane wbudowane) albo 5, 10, 15 lub 20 km (pobierane na żywo z Geoportalu).
 - **Pozostałe anteny na masztach:** NEC-2 liczy antenę z otwartej zakładki razem ze wszystkimi antenami przypisanymi do masztów, z odległościami i kierunkami z planu działki, i pokazuje, ile dB zabiera sprzężenie. Anteny na tym samym maszcie też się liczą (np. dipol pod Yagi), o ile druty są co najmniej 0,5 m od siebie. Pozostałe anteny mogą być podłączone (50 Ω) albo rozwarte. Wyłączenie opcji liczy samą antenę.
-- **Linki do zakładek:** np. `#delta`, `#dipole`, `#y15`, `#y10`, `#a3s`, `#hex`, `#quad`, `#maszty`.
+- **Linki do zakładek:** np. `#delta`, `#hdelta`, `#dipole`, `#y15`, `#y10`, `#a3s`, `#hex`, `#quad`, `#maszty`.
 
 ![Charakterystyka pionowa z profilem terenu](docs/przekroj.png)
 
@@ -91,7 +95,7 @@ Numeryczny model terenu (NMT) **GUGiK** jest pobierany usługą `services.gugik.
 ## Ograniczenia
 
 - Terenu nie liczy NEC. Poprawka od rzeźby terenu jest przybliżeniem, podobnie jak w HFTA. Najmniej pewna jest dla anten zawieszonych bardzo nisko (poniżej ~0,1 λ).
-- Budynki wchodzą tylko do poprawki od terenu, jako przeszkody z dyfrakcją na krawędzi (od 30 m), a nie do obliczeń NEC. Najbliższy budynek stoi ok. 130 m od działki, więc nie ma sprzężenia w polu bliskim. Wysokości pochodzą z pomiaru lidarowego (LoD1 2024).
+- Budynki wchodzą tylko do poprawki od terenu, jako przeszkody z dyfrakcją na krawędzi (od 30 m), a nie do obliczeń NEC. Najbliższy budynek z LoD1 stoi ok. 115 m od działki. Altany ROD są bliżej, ale to małe, niskie, przeważnie drewniane obiekty, więc też są liczone tylko jako przeszkody. Wysokości pochodzą z pomiaru lidarowego (LoD1 2024).
 - Model nie uwzględnia drzew, masztów, odciągów, kabla przy antenie z balunem ani altany, strat w materiale elementów ani układów dopasowania (hairpin, gamma).
 - NEC-2 nie modeluje izolacji drutu. Uwzględnia ją współczynnik skrócenia liczony z geometrii przewodu, bo producent DX-Wire go nie podaje. Zostaw 3–5% zapasu i dotnij analizatorem.
 - Wymiary Yagi dobrano w NEC-2 dla rurek Ø 20 mm (15 m) i Ø 16 mm (10 m). Przed budową uwzględnij mocowania elementów do boomu.

@@ -93,7 +93,7 @@ tbody tr{cursor:pointer}
 .prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
 .err{color:var(--warn)}
 .tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line)}
-.tabs button{font:inherit;font-size:16px;font-weight:600;padding:9px 16px 8px;border:1px solid transparent;border-bottom:0;border-radius:6px 6px 0 0;background:transparent;color:var(--muted);cursor:pointer;margin-bottom:-1px;display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
+.tabs button{font:inherit;font-size:16px;font-weight:600;padding:9px 12px 8px;border:1px solid transparent;border-bottom:0;border-radius:6px 6px 0 0;background:transparent;color:var(--muted);cursor:pointer;margin-bottom:-1px;display:flex;flex-direction:column;align-items:flex-start;line-height:1.15}
 .tabs button small{font-size:12px;font-weight:500;letter-spacing:.03em}
 .tabs button[aria-selected="true"]{background:var(--panel);border-color:var(--line);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -116,6 +116,9 @@ tbody tr{cursor:pointer}
 .mrow{display:grid;grid-template-columns:1fr 78px 20px;gap:6px 8px;align-items:center;font-size:14px;color:var(--muted)}
 .mrow input[type=number]{width:78px;box-sizing:border-box;font:inherit;font-family:var(--mono);font-size:15px;padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
 .mcard .warn{color:var(--warn);font-size:13px;margin:0}
+.hdc{display:grid;grid-template-columns:14px 64px repeat(3,minmax(0,1fr));gap:4px;align-items:center;font-size:12.5px;color:var(--muted)}
+.hdc select,.hdc input{width:100%;box-sizing:border-box;font:inherit;font-family:var(--mono);font-size:13px;padding:4px 3px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
+.hdc input:disabled{opacity:.6}
 .planbtn{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--accent);border-radius:5px;background:var(--accent-soft);color:var(--ink);cursor:pointer;align-self:flex-start}
 .elctl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .elctl input{flex:1}
@@ -133,6 +136,7 @@ tbody tr{cursor:pointer}
 
   <nav class="tabs" role="tablist" aria-label="Antena">
     <button type="button" role="tab" id="tab-delta" data-tab="delta" aria-selected="true">Delta<small>40 / 80 m, pionowa</small></button>
+    <button type="button" role="tab" id="tab-hdelta" data-tab="hdelta" aria-selected="false">Delta pozioma<small>pętla na 3 punktach</small></button>
     <button type="button" role="tab" id="tab-dipole" data-tab="dipole" aria-selected="false">Dipol<small>80 / 40 / 20 m</small></button>
     <button type="button" role="tab" id="tab-y15" data-tab="y15" aria-selected="false">Yagi 15 m<small>4 lub 5 el.</small></button>
     <button type="button" role="tab" id="tab-y10" data-tab="y10" aria-selected="false">Yagi 10 m<small>5 el.</small></button>
@@ -144,7 +148,17 @@ tbody tr{cursor:pointer}
   <div class="layout">
     <aside class="controls" aria-label="Parametry anteny">
       <div class="panel" data-tab="delta">
-      <div class="ctl"><span class="lab">Pasmo</span>
+      <div class="ctl"><span class="lab">Rodzaj</span>
+        <div class="seg" id="dMode"><button type="button" data-v="mono" aria-pressed="true">jednopasmowa</button><button type="button" data-v="mb">wielopasmowa (tuner)</button></div></div>
+      <div class="ctl" id="dMB" hidden><span class="lab">Pętla pełnofalowa na</span>
+        <div class="seg" id="dLoop"><button type="button" data-v="3.6" aria-pressed="true">80 m (3,6 MHz)</button><button type="button" data-v="7.1">40 m (7,1 MHz)</button></div>
+        <span class="lab">Pasmo pracy</span>
+        <div class="seg" id="dOp"><button type="button" data-v="3.65">80</button><button type="button" data-v="7.1">40</button><button type="button" data-v="10.12">30</button><button type="button" data-v="14.15">20</button>
+          <button type="button" data-v="18.1">17</button><button type="button" data-v="21.2">15</button><button type="button" data-v="24.93">12</button><button type="button" data-v="28.5">10 m</button></div>
+        <span class="lab">Dopasowanie</span>
+        <div class="seg" id="dMatch"><button type="button" data-v="radio" aria-pressed="true">4:1 + tuner przy radiu</button><button type="button" data-v="eatu">4:1 + eATU przy antenie</button></div>
+        <p class="hint" id="dMBHint"></p></div>
+      <div class="ctl" id="dMono"><span class="lab">Pasmo</span>
         <div class="seg" id="band">
           <button type="button" data-v="7.1" aria-pressed="true">40 m</button>
           <button type="button" data-v="3.55">80 m CW</button>
@@ -161,7 +175,7 @@ tbody tr{cursor:pointer}
         <div class="num"><label for="dAz">Wiązka główna</label><input type="number" id="dAz" min="0" max="359" step="1" value="310" inputmode="numeric"><span>°</span>
           <button type="button" id="dMinus" aria-label="minus 1 stopień">−1°</button><button type="button" id="dPlus" aria-label="plus 1 stopień">+1°</button></div>
         <p class="hint" id="orientHint"></p></div>
-      <div class="ctl"><span class="lab">Balun</span>
+      <div class="ctl" id="dBalunBox"><span class="lab">Balun</span>
         <div class="seg" id="dBalun">
           <button type="button" data-v="4" aria-pressed="true">4:1</button>
           <button type="button" data-v="1">1:1</button>
@@ -172,6 +186,27 @@ tbody tr{cursor:pointer}
           <button type="button" data-v="side">¼λ od góry</button>
           <button type="button" data-v="base">środek dołu</button>
         </div></div>
+      <div class="ctl" id="dOptBox"><span class="lab">Najlepsze ułożenie (NEC-2)</span>
+        <p class="hint">Wierzchołek zostaje na maszcie na obecnej wysokości. NEC-2 sprawdza wysokość dolnego drutu, punkt zasilania i balun, a dla każdego wariantu obrót co 3°, z poprawką od terenu i budynków. Liczy się średni zysk przy 5–15° w kierunku celu, pomniejszony o straty w kablu (z niedopasowaniem) albo w eATU.</p>
+        <select id="dOptTgt" aria-label="Cel optymalizacji"></select>
+        <div class="num"><label for="dOptAz">Azymut celu</label><input type="number" id="dOptAz" min="0" max="359" step="1" inputmode="numeric"><span>°</span></div>
+        <div class="chk"><input type="checkbox" id="dOptSwr" checked><label for="dOptSwr">tylko układy z SWR ≤ 2 (balun 1:1 albo 4:1)</label></div>
+        <div class="num"><button type="button" id="dOptGo" class="planbtn">znajdź najlepsze ułożenie</button><button type="button" id="dOptApply" class="planbtn" hidden>ustaw ten układ</button></div>
+        <p class="hint" id="dOptHint"></p></div>
+      </div>
+
+      <div class="panel" data-tab="hdelta" hidden>
+      <div class="ctl"><span class="lab">Pasmo pracy</span>
+        <div class="seg" id="hdOp"><button type="button" data-v="3.65">80</button><button type="button" data-v="7.1">40</button><button type="button" data-v="10.12">30</button><button type="button" data-v="14.15">20</button>
+          <button type="button" data-v="18.1">17</button><button type="button" data-v="21.2">15</button><button type="button" data-v="24.93">12</button><button type="button" data-v="28.5">10 m</button></div>
+        <p class="hint">Pozioma pętla o stałych wymiarach, rozpięta na trzech punktach i zasilana przez balun 4:1 i tuner, więc pracuje na wielu pasmach.</p></div>
+      <div class="ctl"><span class="lab">Narożniki (E i N od środka działki, wysokość)</span>
+        <div id="hdCorners" class="mcards" style="gap:8px"></div></div>
+      <div class="ctl"><span class="lab">Punkt zasilania</span>
+        <div class="seg" id="hdFeed"><button type="button" data-v="corner" aria-pressed="true">narożnik 1</button><button type="button" data-v="side">środek boku 1–2</button></div></div>
+      <div class="ctl"><span class="lab">Dopasowanie</span>
+        <div class="seg" id="hdMatch"><button type="button" data-v="radio" aria-pressed="true">4:1 + tuner przy radiu</button><button type="button" data-v="eatu">4:1 + eATU przy antenie</button></div>
+        <p class="hint" id="hdHint"></p></div>
       </div>
 
       <div class="panel" data-tab="dipole" hidden>
@@ -350,6 +385,16 @@ tbody tr{cursor:pointer}
         <div class="ctl"><label for="coaxLen">Długość kabla <output id="coaxLenO"></output></label>
           <input type="range" id="coaxLen" min="2" max="100" step="1" value="20"></div>
         <p class="hint" id="coaxHint"></p></div>
+      <div class="ctl"><label for="noiseEnv">Odbiór: szum w okolicy</label>
+        <select id="noiseEnv">
+          <option value="city">miasto (ITU-R P.372)</option>
+          <option value="res" selected>osiedle domów</option>
+          <option value="rural">wieś</option>
+          <option value="quiet">cicha wieś</option>
+        </select>
+        <div class="num"><label for="noiseNF">Szumy radia (NF)</label><input type="number" id="noiseNF" min="0" max="30" step="1" value="10" inputmode="numeric"><span>dB</span></div>
+        <div class="chk"><input type="checkbox" id="noiseHouses" checked><label for="noiseHouses">część zakłóceń z domów w promieniu 100 m, z ich kierunku</label></div>
+        <p class="hint" id="noiseHint"></p></div>
       <div class="ctl"><span class="lab">Otoczenie</span>
         <div class="chk"><input type="checkbox" id="bldChk" checked><label for="bldChk">budynki 3D GUGiK LoD1 (500 m)</label></div>
         <p class="hint" id="bldHint"></p></div>
@@ -407,9 +452,9 @@ tbody tr{cursor:pointer}
       </figure>
 
       <figure>
-        <figcaption><h2>Kierunki DX</h2><span class="d">Azymuty po wielkim kole (ortodromie) z działki do podanych miast. Kliknij wiersz, aby pokazać przekrój.</span></figcaption>
+        <figcaption><h2>Kierunki DX</h2><span class="d">Azymuty po wielkim kole (ortodromie) z działki do podanych miast. „Teren 10°” to wpływ rzeźby terenu względem płaskiego gruntu. RDF i SNR opisują odbiór (wyjaśnienie niżej, w części „Odbiór: RDF i SNR”). Kliknij wiersz, aby pokazać przekrój.</span></figcaption>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Kierunek</th><th>Azymut</th><th>dBi przy 5°</th><th>dBi przy 10°</th><th>dBi przy 20°</th><th>Teren vs płaski (10°)</th></tr></thead>
+          <thead><tr><th>Kierunek</th><th>Az.</th><th>dBi 5°</th><th>dBi 10°</th><th>dBi 20°</th><th title="Teren względem płaskiego gruntu przy 10°">Teren 10°</th><th title="Receiving Directivity Factor przy 10°">RDF 10°</th><th title="SNR sygnału 1 µV/m, SSB 2,5 kHz, przy 10°">SNR 10°</th></tr></thead>
           <tbody id="dx"></tbody>
         </table></div>
       </figure>
@@ -422,6 +467,9 @@ tbody tr{cursor:pointer}
         <h2>Jak to jest liczone</h2>
         <p><b>Antena i grunt: pełny NEC-2.</b> Charakterystyki (mapa nieba, przekroje, tabela DX), impedancja, SWR, rezonans i straty w gruncie pochodzą z NEC-2 (nec2c, ten sam silnik co w 4nec2), liczonego metodą momentów z dokładnym gruntem Sommerfelda-Nortona, w podwójnej precyzji, z krokiem 1° w elewacji i 5° w azymucie. Delta i dipol są dostrajane w NEC do rezonansu (X = 0) na podanej częstotliwości. Druga antena na działce jest liczona w NEC razem z główną.</p>
         <p><b>Rzeźba terenu: poprawka w stylu HFTA.</b> NEC-2 umie liczyć tylko płaski grunt, dlatego wpływ ukształtowania terenu z Geoportalu dodawany jest jako poprawka do wyniku NEC. To jedyna przybliżona część obliczeń. Liczymy ją dla prądów z NEC: odbicie od płaszczyzny dopasowanej do terenu w pierwszej strefie Fresnela, ze współczynnikami Fresnela dla wybranego gruntu, przeszkody dalej niż 300 m jako ostrze noża, krzywizna Ziemi ze współczynnikiem 4/3. Linia przerywana „płaski grunt” to czysty wynik NEC-2.</p>
+        <h2>Odbiór: RDF i SNR</h2>
+        <p><b>RDF</b> (Receiving Directivity Factor) to zysk w kierunku stacji minus średni zysk anteny w całej górnej półprzestrzeni, liczony z tej samej charakterystyki NEC-2 z terenem. Gdy szum przychodzi z każdej strony po równo, różnica RDF dwóch anten to różnica ich SNR. Straty w gruncie i w kablu obniżają sygnał i szum po równo, więc RDF ich nie zawiera.</p>
+        <p><b>SNR</b> jest liczony dla słabego sygnału DX o natężeniu 1 µV/m (0 dBµV/m) w paśmie SSB 2,5 kHz. Szum zewnętrzny to szum z działalności człowieka i galaktyczny według ITU-R P.372 dla wybranego otoczenia. Poziomy ITU są podane dla krótkiego pionowego monopola nad idealną ziemią, dlatego szum odbierany przez antenę skalowany jest jej średnim zyskiem względem takiego monopola. Opcjonalnie część zakłóceń (50 % w mieście i na osiedlu, 30 % na wsi) przychodzi nisko, z kierunku budynków w promieniu 100 m, ważona odwrotnością kwadratu odległości. Altany na działkach ROD liczą się z wagą 0,3 domu, bo są używane okresowo i mają mniej urządzeń. Do tego dochodzą szumy własne radia. Szum atmosferyczny (burze) zmienia się z porą roku i dnia i nie jest liczony. To przybliżenie, dobre do porównywania anten na tej samej działce, a nie do przewidywania dokładnej wartości SNR.</p>
         <p class="muted">Czego nie ma w modelu: drzew, budynków, masztu i kabli zasilających, strat w materiale elementów i w układzie dopasowania. Izolacja drutu jest uwzględniona współczynnikiem skrócenia (NEC-2 nie modeluje izolacji bezpośrednio). Tryb „szybki model” to wcześniejszy model przybliżony, bez NEC. Silnik: nec2c, licencja GPL-3.0, źródło github.com/KJ7LNW/nec2c, skompilowany do WebAssembly.</p>
       </section>
     </div>
@@ -587,10 +635,10 @@ function compute(ant,o,T,flat){
   const g=GROUNDS[o.ground]; const eps=[g.er,-60*lam*g.sig];
   const geo=ant;
   // free-space normalisation (integrate |E|^2 over sphere)
-  let Pint=0;
-  for(let el=-88;el<=88;el+=4){for(let az=0;az<360;az+=6){const e=el*Math.PI/180,a=az*Math.PI/180;const u=[Math.cos(e)*Math.sin(a),Math.cos(e)*Math.cos(a),Math.sin(e)];
+  let Pint=o.noNorm?1:0;  // noNorm: only differences (terrain − flat) are needed, normalisation cancels
+  if(!o.noNorm)for(let el=-88;el<=88;el+=4){for(let az=0;az<360;az+=6){const e=el*Math.PI/180,a=az*Math.PI/180;const u=[Math.cos(e)*Math.sin(a),Math.cos(e)*Math.cos(a),Math.sin(e)];
     const E=field(geo.segs,u,k,null);let p=0;for(const c of E)p+=c[0]*c[0]+c[1]*c[1];Pint+=p*Math.cos(e)*(4*Math.PI/180)*(6*Math.PI/180);}}
-  const AZ=[],EL=[];for(let a=0;a<360;a+=5)AZ.push(a);for(let e=1;e<=90;e+=1)EL.push(e);
+  const AZ=o.AZ?o.AZ.slice():[],EL=o.EL?o.EL.slice():[];if(!o.AZ)for(let a=0;a<360;a+=5)AZ.push(a);if(!o.EL)for(let e=1;e<=90;e+=1)EL.push(e);
   const G=[]; const refl=[]; // G[ia][ie] dBi
   const W=o.smooth??3;
   const KR=2*8.49e6; // 4/3 earth radius, curvature drop d^2/(2kR)
@@ -797,7 +845,7 @@ function deltaDims(Pe,apex,bottom){
   return {b,s,h,apex:bottom+h,bottom,Pe};
 }
 function necGeomDelta(p,scale,r){
-  const lam=299.8/p.f, d=deltaDims(306/p.f*scale,p.apex,p.bottom);
+  const lam=299.8/p.f, d=deltaDims(306/(p.mb?p.fDesign:p.f)*scale,p.apex,p.bottom);  // mb: loop cut for fDesign, used on p.f
   const A=[0,0,d.apex],R=[d.b/2,0,d.bottom],L=[-d.b/2,0,d.bottom];
   const ns=segCount(d.s,lam,7), nb=segCount(d.b,lam,9)|1;
   const wires=[{a:A,b:R,n:ns,r},{a:R,b:L,n:nb,r},{a:L,b:A,n:ns,r}];
@@ -864,11 +912,12 @@ function wireSegs(wires){const segs=[];
 // ---- analysis: tune to resonance (wire antennas), then pattern over Sommerfeld-Norton ground
 async function necAnalyze(t,p,wireR,ground,extra){
   const gr={er:ground.er,sig:ground.sig};
-  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,gr]);
+  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   let scale=1, tuned=false; const geomOf=s=>necGeom(t,p,s,wireR);
   if(t==='delta'||t==='dipole'||((t==='hex'||t==='quad')&&p.tune)){ // secant search for X=0 at the resonance frequency
-    const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,p.f,gr,['XQ'],ldCards(g.loads)))).X;};
+    const fT=(t==='delta'&&p.mb)?p.fDesign:p.f;  // multiband loop: resonant at its design frequency
+    const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,fT,gr,['XQ'],ldCards(g.loads)))).X;};
     let s0=1,x0=await X(s0),s1=(t==='hex'||t==='quad')?0.98:0.97,x1=await X(s1);
     for(let k=0;k<6&&Math.abs(x1)>1;k++){if(x1===x0)break;const s2=Math.min(1.3,Math.max(0.75,s1-x1*(s1-s0)/(x1-x0)));s0=s1;x0=x1;s1=s2;x1=await X(s1);}
     scale=s1; tuned=true;
@@ -896,7 +945,7 @@ function rotateSegs(segs,beam){const b=beam*Math.PI/180,c=Math.cos(b),s=Math.sin
   const R=v=>[v[0]*c+v[1]*s,-v[0]*s+v[1]*c,v[2]];
   return segs.map(g=>({r:R(g.r),dl:R(g.dl),I:g.I,Ic:g.Ic}));}
 
-function necGeom(t,p,s,r){return t==='delta'?necGeomDelta(p,s,r):t==='dipole'?necGeomDipole(p,s,r):t==='hex'?necGeomHex(p,s):t==='quad'?necGeomQuad(p,s):necGeomYagi(t,p);}
+function necGeom(t,p,s,r){return t==='delta'?necGeomDelta(p,s,r):t==='dipole'?necGeomDipole(p,s,r):t==='hex'?necGeomHex(p,s):t==='quad'?necGeomQuad(p,s):t==='hdelta'?necGeomHDelta({...p,wireR:r}):necGeomYagi(t,p);}
 const ldCards=(L,off=0)=>(L||[]).map(l=>`LD 4 ${l.tag+off} ${l.seg} ${l.seg} ${l.R} 0`);
 function geomRadius(g){let m=0;g.wires.forEach(w=>[w.a,w.b].forEach(v=>m=Math.max(m,Math.hypot(v[0],v[1]))));return m;}
 // Main antenna together with other (passive) antennas nearby. nbs:[{type,p,beam,dist,brg,term,name}] (a single object is accepted too); mainBeam = compass azimuth of main beam.
@@ -905,7 +954,7 @@ async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nbs,extra){
   const gr={er:ground.er,sig:ground.sig};
   const base=await necAnalyze(t,p,wireR,ground,extra);
   const g1=necGeom(t,p,base.scale,wireR);
-  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
+  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   const used=[], skipped=[]; let wires=g1.wires.slice();
   const loads=ldCards(g1.loads);
@@ -1021,6 +1070,18 @@ function necGeomQuad(p,scale=1){
   return {wires,feed,loads,info:{kind:'quad',height:p.height,band:p.band,lam:299.8/Q.f,dims:Q,side:{r:Q.r*IN,d:Q.d*IN*scale,dir:Q.dir*IN},bottom:zc-Q.r*IN/2,bottomAll:zc-big.r*IN/2,boom:216*IN,multi:!!p.multi}};
 }
 
+// ---- horizontal delta loop: three corners in local metres (E, N, height), fixed geometry, fed at corner 1 or mid side 1–2 (tuner-fed multiband)
+function necGeomHDelta(p){
+  const lam=299.8/p.f, r=p.wireR||0.0005, C=p.corners.map(c=>[c.e,c.n,c.h]), n=L=>Math.max(5,Math.ceil(L/(lam/40)));
+  const len=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);
+  const wires=[];let feed;
+  if(p.feedPos==='side'){const L=len(C[0],C[1]),N=n(L)|1;wires.push({a:C[0],b:C[1],n:N,r});feed={tag:1,seg:(N+1)/2};}
+  else{wires.push({a:C[0],b:C[1],n:n(len(C[0],C[1])),r});feed={tag:3,seg:n(len(C[2],C[0]))};}  // last segment of side 3–1 ends at corner 1
+  wires.push({a:C[1],b:C[2],n:n(len(C[1],C[2])),r},{a:C[2],b:C[0],n:n(len(C[2],C[0])),r});
+  if(p.feedPos!=='side')feed={tag:3,seg:wires[2].n};
+  const sides=[len(C[0],C[1]),len(C[1],C[2]),len(C[2],C[0])], P=sides[0]+sides[1]+sides[2];
+  return {wires,feed,info:{kind:'hdelta',sides,Pe:P,height:(C[0][2]+C[1][2]+C[2][2])/3,bottom:Math.min(C[0][2],C[1][2],C[2][2]),corners:C}};
+}
 // Metal objects (e.g. a steel trailer, a tin garage) as NEC wire grids. poly: 4 corners in the antenna frame [m], z0..z1 height.
 function wireBox(poly,z0,z1,step=1.0,r=0.005){
   const len=i=>{const a=poly[i],b=poly[(i+1)%4];return Math.hypot(b[0]-a[0],b[1]-a[1]);};
@@ -1038,7 +1099,7 @@ function wireBox(poly,z0,z1,step=1.0,r=0.005){
 
 // "Catalogue" gain: the same antenna alone in free space (no ground, no metal, no neighbour).
 async function necFreeSpace(t,p,wireR,scale){
-  const key=JSON.stringify(['fs',NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,scale]);
+  const key=JSON.stringify(['fs',NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,scale]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   const g=necGeom(t,{...p,feedSys:'balun11'},scale,wireR);  // catalogue gain: the antenna alone, without the coax shield
   const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,{er:1,sig:0},['RP 0 37 72 1000 0 0 5 5'],ldCards(g.loads),true));
@@ -1051,12 +1112,12 @@ async function necFreeSpace(t,p,wireR,scale){
 }
 
 const TERRAIN_LINES = ["KNNNNNNMMMNNNOPPRQQPPPOMKIGFDBA?<=<:888201110112211103----384354344443444443433444444444445555555555666666665666776676677", "KNNNNNNLLLMLMMMNNNOMLKKIFCBA?><;:::898876222213---53596744455444544665555677778778777778899:;;;=======?>>>====777::=BAA?=", "KNNNONNNKKKKKKLLLLLKKJIHGFEDCA=>=<:9876444402--23;77844444444444544566<<<;;<<;;?=>??======>ABC??EIGHIJKLLMNOOOOOONONMLJII", "KNNNOONNMKJIHIJIJJIIIHHGFFCBA?>;:977665400/--/=98765557::<<=>>=<;;;<<=>>>??@@@@AAABBCDEFGIIJKLLLKLLNOPQSTUVWXYZZ[[[ZYWWUR", "KMNNNNOONMKIHGEDEDDDDDDCDCDCA@>=832675565-.7=79;=;<=>>>??>>==<<>?ACDEFGHHJJIIJIIIIIIJLMNPQRSSTUVVWXXX[[[]^_abcddeffggggfe", "KKNNNOOOONLLKGC>ABA@>>>>:644506655557985336=>>>CGJJIIIHHHFFFFGFFFDECDBCDEGIJKMNPPSSTUVXXYYYZZZ[]^_^]_bcdfghjkmnqrtvxyz{|{", "KIKNOOOPONNLKJDCBBA@@??>7333558777767775334>===>@ERTUSSRRRRRSRRQQPPPPPPOONLKKIHJKKLLMNOPQSUUWYZ^_bdgikmnpsvwxxyyyyzz{|}~}", "KIIKLOOPOPOMLECAAA@=<=>=;73406899:9;9::::333==>>>@>>BPPRRQTSSTUVWXYZZ[[]^]][[ZZYXXYYYZZZZ]]_ddeghhijkklmopqrsuuuwwxxyz{|}", "KIIJNOPPQQPOMIF@@BBAA?=<::99753797798;;889993339>>=>BBBCDBCCFIJKLLKOOOQRSTTUVYYZZ[^baccdddeefffghhhhhijkmnnpppppqqnnnnttt", "KIIIHIIIPQQPOOKGFGGGEDAA@@A@?<:8607344333666666683337?6=>==?A<:989:;BDFHJKMOPQQRRTUUVWWXXXXXXXXXYY[][][ZZZ[]_acdeeecbbaaa", "KIIJIIQPPQRQQQPOOKMKKJIIIHECABB@<975561864:55544448844876333333678889:>>>>@>@@AABCKLLLKKKJJHDDDEEEEEEGIHHIIJJJJJJJIKHHILI", "KIIIHQQPOORRRSTTSSQQQQPPOMIGGEA?;753344435335447775578877777733333333566666666533333335667999:>@@;<=>?ABCEGHHIIIJKOOOQRUW", "KIJIPQQPQRRTUUUUUUUTSTTSQOLJGC?::765444444445555554756744444443444444444444444556678555898888888999899999999:<<;<=;<<<<<<", "KJIIJPQQRSTTUVVWVWVVVVUSQPNLIFB?=:9765433333344444564444444555564444445455556998555555555555555556566666666666876::766777", "KKIIJNQRSSSSTUVWWXWWXWWWWVUSQOMJGDA?<::9877443333444678999999998899989<=>>>>?ANKDHEB@??<<;:9<>=788:;<;<4756666668:6666666", "KKIIIKQRRRSSSTWWWWXYZZZZZZZYYXWVVUTRQONMLKKKJJJKJIHGFDCCBAA@@?@???>=<<;<=>>>>>>>?@@?>?????@??AAAAAAAAAAGHHHIIJKKKIGCJJJKK", "KKIIIIJMLPQQRSTUUUUWYYYYZ[]]]]^__a____^]][YXWVUSSPOOLKIHHCCDCBAAAAAA>>>???@@@??EHGFBCDDEEFGGGFGHIKLMMOOOOOMNOPRUVXXYZZZ[]", "KKIIIIIIIIPRRRRSTTTUUWXZ[]______abbbbbbba^][ZZZYXXPOONMMLJIIHECIICBBA@@CMMMNLMGJOSSSRSUWWXXYZZZ]]^^____abcefffffffeecddef", "KKIIIIIIIJKQQRRRSUTTUVVVVV]]^__abbccddddcdcbbbccYXYY][ZXXWURQONLLLJGECAAABBEIKMSUUYYZ[[]_bcddddeffgghiiijklmmmmlmlnnnnoop", "KLIIIIIIIKKNRRRRSUVVVVVVV[]]__abccddfgghhhiihjjjjhjjijhfecba]XSPPQPPNMLKKJFFGHIJLNNMLJKNOQSP_aghiigjkjkkkkkllkkkkiggffhik", "KLIIIIIKKKKMQRUUUVVVVVV]]^^fqnkfggffffghfiejkklkjkkllllllllmlkkkkkkjhbaa_^[VQVaaaaaa^^XWVUTVUSRQPPPUY[acefggfec_[XWZY[_bc", "KLIIIPKOOLPPQRQRRQQRVW][]]bcdefgggggggggijhhliiiijkijlllllllllkklkllkkkjgggffffffffffffffffhffeeeeddca^[^aa^[YZ]adfghihii", "KLMMNQQPOPPPQQQRRSUUVZ]]^_abaabddeeeffghihffiefffffdhihiihhhiiiiihjjgfffffffhhghhiijkkkjjjihiiihhggghhhhhiijjkkkklmllmlll", "KLJNPQQQPPQQQQSSTYYZ[[[^__a_^____aacbaaabccccdbcccbbbbbbcccccccceefffffffgddddeefgggggffgffeeefefgfgghhhgggggggggghijjjkk", "KLJOLQQQPQQRQQRSZZ[[[[[[]]]]]^___a^bgggifbbbbaaba]^^]]][]]]]^]^^]]]]][ZYYZZ[[ZZZ[]]^^^^__aaabbba__^^^^_^^^__aaaabaaaa_^]]", "KLJOMPRMMNNRQRUVXYYZ[[Z[]]]]^^[[[]]^]_^^____^^^^^^^^a^]][ZYYXWUTRPSTUUUUTSQQRRRQTVWXYYYZZZZ[[[[[[[[[Z[ZYVUQUVWXYZ[]]]^^^_", "KLKNMPRUSSUUTUVWXXYZZZZ][[[[[[[[]]]]]][[[ZZZZZZYYYYYXXXXXWWVXTTSSSSRRRRQRSSSNKGEJMOPPQQQQRSQRQPNLKHCBBCCCCCCDDABBIIIHIIKK", "KLNOMNSSSTUUUUWXXYYYYXZZZZZZZZ[[]WW[ZZZZYYYXXXWWVUTSSQPPPPPOPPPPQRRRRRSSRNPSSQPPOOON@@?>??@@CBDEFGHJKKMOQRSSUUVVWXXYYZZZ[", "KLNOMMSSTTUUUUVVWXXXXXYYYXXXXXXXXXZYYYYYXXXWWWWVVVUTSRQPOMLLKKKLMMNNNNNOOOOOPNMMKJHFEA=>>@BBBDEEFGIJKKKKLLLMMKLLLMMNNOOPQ", "KMOOQMRSSSTUUUVVWWWVWWWWWWXWVVVVVUUVWWVVUVVVUUUUTTTSSRRPPOMLKJIHIIIJJJKKKKJJJJJJJHFC<;;<<==>?@ABCDEEFGHIIJJKLMMNNNNNOOOOO", "KNOPPNMSSSSTUUUUUVVWWWWWWWWWWWVUVUUTTTUTTSSSSRQQPPOONNMLLKJJIHGGGFFFGHHIIIIIJJJJIHGFFDBA@?<:99;;<=?@ABBCDFGHIJJKKLLMMLLLK", "KNOPQQNRRRSTTSTTUUUTUVVVWVVVTTTTTTSVRRRRRRQQQPPONMLKJIHHGFEDCCBAABCDEGHHHGGHHHGFFDBA@>=988899:<<>@AABCCDEFFGGHHIHHHHHHGGF", "KNOPPQQQPPRRSTUUUUUUTUUTTTUTUWRRROPPPOONNMMMMLLKKJIHGGFFEDCBA@?>>>?@AABBBCCDEDDDCCA@>;8666777789;=>@AABCCCDCCCBBA@?@>>==<", "KNNPPOQPOOPQRSTTTTTTTTTTTTVWRQPNNLKJIHHGFEEEEDCBBBCCCDDDDDDEDCBA@@?=<<<;;;;====>>=;:8765434912222011222222200/0///...--*$", "KNNOOPOONNOQRSSTTTTTUTTSSRRPNLKIGGFGHHGFEDB@?=;985521/0111//8;78;:9742221221751110+*+0111///../////'%$$$$$$$$$$$$$$$$$$$$", "KNNONOONMNOPPQRSTTTTTSRQPNLJIFDCBCDDDCBA?=;211//11100000/////1100/5889:51/22110122-,-)('&)''&%%%%&&%&&''()&&&'+222113330-"];
-const SITECFG={"loc": "JO90HH", "lat": 50.333, "lon": 18.61135, "N": 274054.4, "E": 472347.9, "h0": 223.7, "base": 199, "step": 0.61, "tabs": ["delta", "dipole", "y15", "y10", "a3s", "hex", "quad"], "planR": 30, "obstMin": 30, "parcel": [[-18.4, 4.7], [14.1, 12.3], [17.4, -4.8], [-13.3, -12.1]], "parcelLabel": "działka SQ9UM", "callsign": "SQ9UM", "masts": [{"id": "M1", "name": "M1", "pos": [-14.2, 1.9], "ant": "y15:5el"}, {"id": "M2", "name": "M2", "pos": [-12.0, -9.1], "ant": "a3s"}, {"id": "M3", "name": "M3", "pos": [9.3, 1.5], "ant": "y15:4el"}], "metal": [{"name": "domek (przyczepa holenderska)", "poly": [[0.5, 4.88], [3.81, 5.62], [5.71, -2.73], [2.48, -3.47]], "z0": 0.3, "z1": 3.0}, {"name": "garaż blaszany", "poly": [[2.73, -3.64], [5.21, -3.14], [5.54, -5.04], [2.98, -5.62]], "z0": 0.05, "z1": 2.15}], "defaults": {"y15": {"height": 7}, "a3s": {"height": 7}, "y10": {"height": 7}, "hex": {"height": 7}, "quad": {"height": 7}}, "apexHint": "Wierzchołek na drzewie albo maszcie. Działka ma ok. 33 × 17 m, dłuższy bok w linii 77°–257°.", "note": "Działka SQ9UM (ok. 33 × 17 m, ROD przy dz. ewid. 288, Stare Łabędy) leży na łagodnym zboczu, 224 m n.p.m. Na północ i północny wschód teren opada o 15–20 m w ciągu 1–1,5 km, dalej jest dolina i ponowne wzniesienie. Na południe i południowy zachód teren wznosi się o 10–15 m. Na działce stoją trzy maszty o regulowanej wysokości (domyślnie 7 m): M1 (Yagi 5 el. 15 m), M2 (A3S) i M3 (Yagi 4 el. 15 m). Są też domek, czyli metalowa przyczepa holenderska ok. 3 m, drewniana altana i garaż blaszany 2,15 m. Najbliższe budynki poza działką stoją 115–190 m dalej (hale do 17 m na zachodzie)."};
+const SITECFG={"loc": "JO90HH", "lat": 50.333, "lon": 18.61135, "N": 274054.4, "E": 472347.9, "h0": 223.7, "base": 199, "step": 0.61, "tabs": ["delta", "hdelta", "dipole", "y15", "y10", "a3s", "hex", "quad"], "planR": 30, "obstMin": 30, "parcel": [[-18.4, 4.7], [14.1, 12.3], [17.4, -4.8], [-13.3, -12.1]], "parcelLabel": "działka SQ9UM", "callsign": "SQ9UM", "noiseEnv": "rural", "masts": [{"id": "M1", "name": "M1", "pos": [-14.2, 1.9], "ant": "y15:5el"}, {"id": "M2", "name": "M2", "pos": [-12.0, -9.1], "ant": "a3s"}, {"id": "M3", "name": "M3", "pos": [9.3, 1.5], "ant": "y15:4el"}], "metal": [{"name": "domek (przyczepa holenderska)", "poly": [[0.5, 4.88], [3.81, 5.62], [5.71, -2.73], [2.48, -3.47]], "z0": 0.3, "z1": 3.0}, {"name": "garaż blaszany", "poly": [[2.73, -3.64], [5.21, -3.14], [5.54, -5.04], [2.98, -5.62]], "z0": 0.05, "z1": 2.15}], "defaults": {"y15": {"height": 7}, "a3s": {"height": 7}, "y10": {"height": 7}, "hex": {"height": 7}, "quad": {"height": 7}}, "apexHint": "Wierzchołek na drzewie albo maszcie. Działka ma ok. 33 × 17 m, dłuższy bok w linii 77°–257°.", "note": "Działka SQ9UM (ok. 33 × 17 m, ROD przy dz. ewid. 288, Stare Łabędy) leży na łagodnym zboczu, 224 m n.p.m. Na północ i północny wschód teren opada o 15–20 m w ciągu 1–1,5 km, dalej jest dolina i ponowne wzniesienie. Na południe i południowy zachód teren wznosi się o 10–15 m. Na działce stoją trzy maszty o regulowanej wysokości (domyślnie 7 m): M1 (Yagi 5 el. 15 m), M2 (A3S) i M3 (Yagi 4 el. 15 m). Są też domek, czyli metalowa przyczepa holenderska ok. 3 m, drewniana altana i garaż blaszany 2,15 m. Najbliższe budynki poza działką stoją 115–190 m dalej (hale do 17 m na zachodzie)."};
 const PROF = decodeTerrain(TERRAIN_LINES,SITECFG.base,SITECFG.step);
 const EMBED={step:25,profiles:PROF,radius:3};
 let TER=EMBED;
 // ---- buildings from OpenStreetMap (local metres east/north of the plot), heights from tags or estimated by type
-const BLD_RAW="lod1|4.34||108 -54,106 -44,146 -36,148 -46;lod1|5.09||147 -70,116 -77,117 -78,114 -79,114 -77,104 -79,104 -79,104 -79,100 -58,142 -48;lod1|4.88||137 -86,108 -93,105 -81,114 -79,117 -78,135 -74;lod1|5.85||106 -129,97 -132,97 -132,91 -133,89 -128,82 -129,78 -130,76 -121,80 -120,78 -112,78 -112,91 -109,96 -107,103 -106,104 -113,97 -114,100 -125,105 -124,105 -124,105 -124,106 -129,106 -129;lod1|8.84||103 -95,154 -84,161 -117,111 -128;lod1|4.01||106 -123,105 -124,100 -125,97 -114,104 -113;lod1|4.1||91 -133,80 -136,78 -130,82 -129,89 -128;lod1|3.81||148 -78,136 -80,135 -74,147 -72;lod1|3.74||150 -83,137 -86,136 -80,148 -78;lod1|16.99||-237 -17,-246 29,-187 40,-178 -7;lod1|4.1||170 -115,164 -117,162 -107,161 -108,160 -103,159 -98,164 -97,165 -100,166 -100,167 -103,167 -103,168 -106,167 -106,168 -109,169 -112,169 -114;lod1|7.35||22 190,13 188,10 187,8 197,11 198,12 195,20 197;lod1|7.19||38 193,34 192,34 191,30 190,28 198,37 200;lod1|7.47||69 199,60 198,58 206,68 208;lod1|5.82||40 206,36 205,34 214,38 214;lod1|6.93||211 -104,202 -105,200 -94,202 -93,202 -96,210 -94;lod1|15.9||-326 88,-308 91,-297 94,-297 94,-261 101,-226 108,-216 60,-222 58,-222 55,-241 51,-242 55,-252 53,-264 50,-263 47,-286 42,-287 42,-288 46,-299 44,-317 40,-322 64,-326 87;lod1|4.55||68 224,68 223,71 224,72 222,72 218,66 217,65 221,64 224;lod1|4.47||27 236,17 234,16 239,20 240,20 242,23 243,23 240,26 241;lod1|16.61||-312 17,-246 29,-237 -17,-304 -30;lod1|4.65||93 226,88 225,86 236,91 237;lod1|7.73||26 247,15 245,14 254,24 256;lod1|7.39||99 234,101 234,110 236,113 225,103 223,102 230,99 230;lod1|7.55||58 253,49 252,47 260,56 262;lod1|7.09||240 -124,232 -126,231 -121,229 -121,229 -118,230 -118,230 -117,238 -115;lod1|6.85||243 -146,234 -147,233 -143,231 -143,231 -141,233 -141,232 -137,242 -136;lod1|4.32||159 228,154 227,152 237,158 238;lod1|7.14||246 -165,236 -166,236 -161,232 -162,232 -157,245 -155;lod1|7.94||269 -130,260 -132,258 -122,268 -120;lod1|8.77||179 232,171 230,169 239,177 241;lod1|5.66||52 287,46 286,44 292,51 293;lod1|5.11||6 294,1 293,1 295,0 299,4 300,8 300,9 296,5 296;lod1|13.39||92 -312,50 -343,31 -317,72 -286;lod1|4.58||282 -122,276 -123,275 -115,275 -111,281 -110,281 -114;lod1|7.14||249 -184,240 -186,239 -180,238 -180,237 -178,239 -178,239 -178,239 -177,248 -175;lod1|12.94||-77 -326,-38 -297,2 -352,-37 -381;lod1|3.1||174 255,174 253,181 254,182 250,175 249,171 248,169 254;lod1|7.75||275 -155,273 -155,273 -158,273 -158,264 -159,262 -148,271 -146,272 -148,274 -148;lod1|8.04||-18 312,-11 314,-11 312,-8 313,-7 305,-10 305,-12 304,-12 305,-16 305;lod1|6.81||12 309,2 307,1 315,10 317;lod1|7.88||54 307,42 305,41 309,44 309,43 315,52 316;lod1|7.01||252 -204,244 -206,239 -206,238 -200,240 -200,239 -197,251 -195;lod1|10.25||189 258,181 256,179 264,180 264,179 267,182 267,183 265,187 266;lod1|7.01||266 -167,275 -166,277 -166,278 -172,276 -172,276 -175,267 -177;lod1|9.38||306 -119,300 -119,299 -119,299 -117,295 -118,295 -117,295 -110,301 -110,301 -109,305 -109;lod1|6.15||166 279,161 278,162 277,155 276,153 284,152 283,151 288,164 290;lod1|3.62||293 -146,286 -147,285 -139,292 -138,293 -142;lod1|2.36||253 -210,245 -211,244 -206,252 -204;lod1|6.19||141 295,129 293,128 299,130 299,129 302,139 304;lod1|4.0||267 -177,276 -175,277 -181,268 -182;lod1|5.53||-45 340,-41 340,-41 339,-37 340,-36 333,-36 333,-36 332,-35 332,-35 332,-31 332,-31 332,-29 332,-28 323,-38 321,-39 330,-43 330;lod1|6.68||242 -216,244 -216,244 -215,246 -215,254 -214,254 -214,256 -224,246 -225,245 -219,242 -219;lod1|7.17||81 320,74 319,75 316,73 316,71 327,80 329;lod1|6.07||281 -196,271 -198,269 -187,280 -186;lod1|6.99||-8 330,-16 328,-18 335,-10 337;lod1|5.89||164 303,161 302,162 299,150 297,149 306,159 307,160 305,163 306;lod1|6.7||102 324,98 324,98 321,94 320,92 331,100 333;lod1|5.01||326 -119,317 -119,317 -107,326 -107;lod1|5.77||137 313,128 311,128 314,129 314,128 319,136 321;lod1|6.91||326 -135,317 -135,317 -131,315 -131,315 -126,315 -123,321 -123,322 -126,326 -126;lod1|6.75||246 -232,251 -232,251 -235,257 -234,259 -244,250 -246,249 -239,247 -239;lod1|4.44||242 -242,243 -249,248 -249,249 -252,240 -253,238 -254,237 -251,239 -250,238 -243;lod1|13.11||-310 262,-283 267,-252 273,-226 278,-225 272,-221 273,-220 266,-223 265,-222 259,-306 243,-309 259;lod1|7.68||283 -217,276 -219,275 -216,274 -216,272 -207,281 -206;lod1|3.12||-27 342,-32 341,-34 347,-35 353,-29 354,-28 348;lod1|2.25||-7 349,0 350,1 343,-6 342;lod1|4.3||9 354,9 351,10 351,11 346,9 346,9 345,1 343,0 350,-1 352,-1 353,2 354,2 353,2 352,8 353;lod1|8.51||172 -365,140 -329,180 -293,212 -329;lod1|5.82||159 318,156 317,156 313,148 311,147 319,159 321,159 320;lod1|7.73||200 298,199 298,200 290,196 289,197 287,194 286,193 290,192 290,191 296,200 298;lod1|6.9||77 342,69 341,67 349,68 349,71 349,75 350,76 350;lod1|5.72||316 -149,317 -149,317 -145,326 -145,326 -154,327 -160,317 -160,317 -155,317 -151,316 -151;lod1|5.73||159 321,147 319,146 326,154 327,154 323,158 324;lod1|5.99||134 330,125 328,124 332,123 332,122 337,133 339;lod1|11.71||-37 -381,2 -352,8 -359,-31 -388;lod1|2.97||299 -205,292 -206,291 -199,298 -198;lod1|4.25||66 355,74 356,75 350,71 349,68 349,67 349;lod1|6.63||106 347,95 346,93 356,101 357,101 356,104 356;lod1|8.17||358 -110,355 -110,345 -110,343 -110,343 -110,345 -110,344 -104,344 -101,356 -101,356 -101,355 -101,355 -107,356 -107,356 -110,358 -110;lod1|6.39||264 -259,261 -260,262 -263,254 -264,253 -256,260 -255,260 -254,263 -254;lod1|6.82||286 -234,284 -234,285 -238,277 -240,276 -232,281 -231,284 -230,286 -230;lod1|7.18||154 337,153 337,154 333,144 332,143 340,154 342;lod1|7.65||358 -118,358 -119,356 -119,345 -119,344 -119,344 -119,345 -119,345 -114,345 -110,355 -110,355 -116,356 -116,356 -118;lod1|7.57||344 -128,345 -128,345 -122,345 -119,356 -119,356 -120,357 -122,357 -124,357 -125,356 -125,356 -128,358 -128,358 -128,355 -128,345 -128,344 -129;lod1|6.08||210 310,198 307,197 312,199 312,198 316,209 318;lod1|2.85||263 -273,254 -274,248 -275,247 -271,263 -269;lod1|8.07||358 -137,356 -137,345 -138,344 -138,344 -137,344 -137,345 -137,345 -131,345 -128,355 -128,355 -134,356 -134,356 -137,358 -137;lod1|7.02||327 -196,318 -196,318 -189,320 -189,320 -187,327 -187;lod1|17.92||-313 417,-297 420,-271 288,-256 291,-252 273,-283 267,-287 285,-307 387;lod1|7.9||344 -146,344 -146,344 -146,346 -146,346 -141,345 -138,356 -137,356 -143,357 -143,357 -146,358 -146,358 -146,356 -146,344 -146;lod1|7.04||265 -282,261 -282,262 -284,262 -285,257 -286,256 -283,256 -283,254 -274,263 -273;lod1|7.65||356 -149,355 -149,355 -155,346 -155,346 -152,345 -152,344 -146,356 -146;lod1|6.84||289 -258,280 -260,279 -250,282 -249,282 -248,285 -247,285 -249,288 -249;lod1|4.28||-44 379,-35 381,-33 374,-42 372;lod1|7.04||140 353,130 351,129 361,131 361,131 362,134 363,135 362,138 362;lod1|5.33||391 20,390 20,390 17,381 16,380 21,376 21,375 24,389 25,389 22,391 23;lod1|5.77||328 -219,316 -219,315 -208,327 -208;lod1|2.53||109 362,108 368,116 369,117 363;lod1|3.14||374 -100,368 -100,367 -93,374 -93;lod1|7.0||351 -176,341 -177,341 -167,342 -167,342 -163,344 -163,351 -163,351 -171,351 -171;lod1|6.12||213 324,205 323,204 327,201 326,200 330,212 332;lod1|5.91||212 332,200 330,200 333,203 334,202 338,210 339;lod1|3.37||391 35,393 35,394 35,394 36,399 36,399 33,394 33,387 33,387 35,386 36,386 38,391 38;lod1|22.1||-342 424,-315 429,-313 417,-307 387,-287 285,-283 267,-310 262,-309 259,-312 258,-314 267,-311 268,-316 291,-333 287,-338 309,-320 312,-325 339,-329 338,-330 345,-335 344,-336 350,-333 350,-334 355,-328 356,-330 364,-338 362,-340 373,-332 374,-334 382;lod1|6.43||268 -301,254 -304,253 -298,253 -296,259 -295,260 -294,262 -294,262 -294,263 -294,264 -295,267 -295;lod1|12.77||-13 -418,25 -389,37 -405,18 -419,-1 -434;lod1|3.44||190 341,189 346,197 348,198 342;lod1|2.88||364 -166,357 -166,357 -160,364 -160;lod1|6.21||330 -235,328 -235,328 -239,326 -239,320 -239,320 -231,328 -231,328 -232,330 -232;lod1|3.89||387 -100,387 -109,382 -109,382 -100;lod1|11.4||99 -400,100 -399,138 -370,162 -403,163 -403,163 -403,163 -404,169 -412,154 -423,154 -423,152 -425,148 -427,148 -427,130 -441,124 -433,124 -433,123 -433,124 -433;lod1|6.42||366 166,361 166,361 174,366 174,366 170,366 170;lod1|9.18||407 33,399 33,399 36,399 36,399 38,396 38,397 40,399 40,399 42,407 42;lod1|3.65||296 274,290 273,289 282,295 283;lod1|3.35||355 182,354 189,383 192,384 187,379 186,369 186,360 185,360 184,360 182;lod1|7.03||409 13,399 12,398 23,408 24;lod1|6.52||212 345,203 343,203 347,201 347,200 352,211 353;lod1|2.68||326 -244,327 -248,318 -248,318 -244,320 -244,320 -239,326 -239;lod1|4.51||305 -277,302 -278,301 -268,300 -264,304 -264,304 -267;lod1|6.15||303 269,297 268,296 274,295 283,300 284;lod1|8.05||298 -282,290 -291,283 -284,292 -276;lod1|7.11||410 -13,402 -13,402 -4,410 -4;lod1|4.92||380 167,379 167,377 167,367 166,366 166,366 170,376 171,375 176,379 176;lod1|3.44||379 184,379 183,370 182,360 182,360 184,360 185,369 186,379 186,384 187,384 184;lod1|3.19||397 135,397 130,393 128,393 129,385 127,384 131,384 131,384 134,386 134,387 132,391 133;lod1|3.97||-337 261,-334 262,-331 249,-331 249,-329 238,-329 238,-329 238,-334 237,-337 248,-334 249;lod1|6.94||330 -258,328 -258,328 -262,320 -262,320 -254,320 -254,320 -250,328 -250,328 -255,330 -254;lod1|11.65||18 -419,37 -405,88 -471,69 -486,68 -485;lod1|4.91||352 -226,347 -228,345 -224,343 -219,352 -215,354 -220,351 -222;lod1|5.85||-1 409,-10 407,-15 435,-6 436;lod1|9.08||408 -94,408 -105,398 -105,399 -94;lod1|7.47||319 272,310 270,309 278,314 279,315 279,316 279,318 279;lod1|7.06||240 345,230 345,230 355,242 355,242 357,246 358,246 352,242 352,242 349,240 349;lod1|7.63||405 170,380 167,379 176,404 178;lod1|8.67||407 -122,406 -140,398 -139,397 -139,397 -133,395 -132,395 -130,397 -130,397 -121;lod1|5.83||406 122,398 121,398 130,397 130,397 135,405 136;lod1|4.05||-358 -213,-361 -216,-368 -209,-364 -206;lod1|8.12||358 -242,349 -248,342 -237,348 -233,350 -236,351 -235,353 -233;lod1|8.46||210 370,206 369,206 367,200 366,199 371,196 370,195 374,198 374,198 378,208 379;lod1|4.03||-364 -206,-368 -209,-368 -210,-374 -204,-370 -200;lod1|9.81||-1 -434,18 -419,68 -485,69 -486,72 -490,52 -504;lod1|9.03||404 146,395 145,394 154,403 154;lod1|8.82||407 -140,406 -152,397 -152,398 -141,398 -139,406 -140;lod1|9.12||376 -198,377 -192,377 -189,381 -189,381 -190,390 -191,400 -192,399 -206,399 -212,390 -212,390 -205,391 -205,391 -199,389 -199,380 -198;lod1|8.65||403 154,394 154,393 166,402 166;lod1|4.73||-73 417,-82 416,-83 425,-74 426,-74 423;lod1|8.57||388 -176,388 -171,394 -171,394 -173,404 -174,403 -188,393 -187,394 -181,392 -181,392 -179,394 -179,394 -176;lod1|6.25||394 -165,394 -162,394 -159,406 -159,405 -169,396 -168,396 -165;lod1|6.09||-25 434,-74 423,-74 426,-76 436,-76 436,-67 438,-28 446,-28 446;lod1|7.18||446 2,444 2,444 -3,433 -4,433 10,443 10,443 4,446 4;lod1|7.74||447 -16,444 -16,444 -23,444 -23,434 -23,433 -7,443 -8,444 -13,446 -13;lod1|9.35||-471 -300,-399 -229,-391 -238,-386 -242,-376 -253,-365 -242,-364 -240,-358 -246,-362 -249,-359 -251,-360 -252,-348 -264,-357 -273,-363 -279,-429 -343,-442 -330,-443 -329,-445 -328,-444 -328,-456 -315,-457 -316,-458 -314,-458 -313;lod1|9.93||447 48,445 47,445 45,433 43,432 52,444 53,445 51,447 51;lod1|7.54||456 19,436 18,435 28,452 28,453 28,456 28;lod1|6.26||453 28,452 28,435 28,435 41,452 42,452 36,451 36,452 32,453 32;lod1|8.77||445 -39,445 -50,435 -50,435 -39;lod1|23.27||-365 -242,-376 -253,-386 -242,-376 -232,-368 -240,-368 -239;lod1|6.59||209 394,203 394,203 396,191 395,191 397,193 397,192 406,190 406,190 409,202 410,203 399,209 400;lod1|16.05||-429 -343,-363 -279,-334 -308,-327 -302,-318 -311,-316 -308,-314 -308,-313 -312,-315 -314,-311 -318,-309 -326,-312 -330,-309 -334,-322 -346,-322 -345,-325 -342,-329 -346,-360 -376,-379 -395;lod1|7.29||431 -99,431 -93,431 -91,432 -85,441 -86,440 -92,440 -94,440 -100;lod1|11.0||4 -607,2 -609,6 -614,-11 -631,-11 -632,-15 -636,-24 -628,-44 -648,-61 -630,-66 -636,-241 -458,-184 -403,-173 -414,-169 -410,-161 -419,-156 -414,-158 -412,-158 -412,-124 -446,-133 -455,-21 -569,-30 -578,-2 -606,1 -609,4 -607;lod1|4.9||-67 438,-76 436,-78 442,-69 444;lod1|3.7||-28 446,-67 438,-69 444,-29 452;lod1|11.1||433 141,431 141,434 124,426 123,422 146,432 147;lod1|4.56||362 286,342 283,341 291,361 294;lod1|8.48||438 -122,437 -130,429 -129,429 -121;lod1|7.65||439 -133,439 -138,437 -138,428 -137,429 -129,437 -130,437 -133;lod1|6.67||398 224,390 223,390 234,382 234,382 239,397 240;lod1|6.54||383 -262,380 -263,381 -267,378 -268,378 -270,373 -272,372 -271,368 -272,366 -264,378 -258,381 -257;lod1|3.41||389 272,362 269,362 274,370 279,389 279;lod1|2.72||457 1,456 -6,452 -6,452 1,453 3,458 3;lod1|5.68||-388 -234,-391 -238,-399 -229,-395 -226;lod1|7.25||428 -148,441 -146,442 -156,429 -158;lod1|4.26||-66 449,-76 447,-77 452,-67 454;lod1|10.99||435 163,424 162,422 184,422 184,430 185,433 185,434 185;lod1|2.96||471 -67,471 -73,466 -73,462 -72,457 -72,457 -73,452 -74,452 -68,453 -68,452 -64,456 -64,456 -62,471 -62;lod1|4.28||-120 469,-118 459,-118 459,-117 454,-113 454,-112 449,-109 450,-108 444,-118 442,-121 458,-123 469;lod1|6.14||392 262,376 260,376 267,391 269;lod1|6.1||456 -50,458 -41,469 -43,468 -52,463 -51,463 -54,459 -54,459 -50;lod1|7.55||335 327,325 326,323 342,333 343,333 342,334 338;lod1|10.12||430 185,422 184,422 186,421 186,420 197,421 197,421 199,429 200;lod1|3.63||365 -288,364 -282,378 -280,378 -286;lod1|4.39||455 137,443 135,442 141,454 143;lod1|6.73||401 -254,401 -267,391 -267,391 -264,391 -262,390 -262,390 -259,391 -259,391 -253;lod1|3.61||392 -268,392 -276,387 -275,387 -268,387 -267,387 -264,391 -264,391 -267,391 -268;lod1|3.8||-84 463,-91 462,-95 481,-88 483;lod1|3.77||-94 461,-101 460,-105 480,-98 481;lod1|2.79||451 191,451 190,452 190,453 187,451 187,448 187,444 186,444 186,437 186,434 185,433 185,433 190,436 190,444 191;lod1|4.12||-59 468,-68 466,-72 486,-63 488;lod1|2.93||458 -146,458 -148,466 -147,466 -151,459 -152,452 -154,452 -154,447 -155,446 -152,452 -150,451 -148;lod1|4.64||-52 469,-59 468,-63 488,-56 489;lod1|3.4||-47 470,-52 469,-56 489,-51 490;lod1|3.96||-40 472,-47 470,-51 490,-44 492;lod1|8.18||433 -227,423 -227,423 -211,433 -211;lod1|6.53||-110 463,-116 462,-116 459,-118 459,-118 459,-120 469,-111 471;lod1|10.23||401 273,389 272,389 279,389 281,389 282,401 283;lod1|3.67||386 294,376 292,375 297,380 298,381 299,384 299,386 298,386 298;lod1|6.18||492 -23,491 -32,477 -31,477 -22;lod1|6.52||278 403,274 402,274 402,274 402,274 399,275 398,269 398,269 398,265 398,263 407,268 407,267 408,270 409,271 408,277 409;lod1|11.37||69 -486,88 -471,92 -478,93 -477,93 -477,92 -485,92 -485,92 -484,89 -486,88 -488,87 -488,86 -488,76 -496,72 -490;lod1|3.52||391 290,389 290,386 291,386 294,386 298,391 299,391 298;lod1|6.41||401 285,392 285,391 290,391 298,400 299;lod1|7.03||491 -94,485 -95,485 -96,478 -97,476 -89,483 -88,483 -85,489 -84;lod1|6.0||-332 -358,-347 -374,-349 -372,-352 -369,-336 -354,-334 -357;lod1|2.49||454 -220,454 -223,442 -225,442 -225,437 -226,436 -224,436 -222,442 -221,442 -221;lod1|3.86||238 430,235 430,234 432,237 432,247 434,246 439,250 440,250 437,251 432,248 431,246 431;lod1|5.79||383 -334,378 -335,378 -336,373 -336,373 -335,373 -335,373 -331,374 -331,374 -318,380 -318,382 -318,382 -318,382 -323;lod1|2.58||453 -213,449 -213,448 -208,452 -208,457 -207,458 -212;lod1|9.86||342 366,343 366,342 374,353 376,356 358,345 356,344 362,342 362;lod1|7.89||250 440,246 439,234 437,233 447,249 449;lod1|5.63||506 41,499 39,496 50,502 52;lod1|6.55||430 -279,430 -279,422 -280,422 -274,421 -274,421 -274,421 -273,420 -272,421 -272,422 -272,421 -267,429 -266,430 -271;lod1|2.29||379 -340,379 -344,377 -344,370 -344,367 -344,367 -341;lod1|6.6||502 -123,490 -126,487 -116,491 -115,497 -114,500 -113;lod1|3.79||509 25,503 23,500 33,506 35;lod1|7.16||436 262,428 261,428 266,426 267,427 268,427 270,435 272;lod1|5.6||-271 -440,-261 -429,-254 -436,-264 -447;lod1|6.59||400 316,391 316,391 325,391 328,399 328;lod1|8.6||401 -327,391 -328,391 -318,401 -317;lod1|11.48||-622 371,-598 374,-596 357,-593 341,-479 359,-478 359,-474 333,-468 334,-460 281,-466 280,-466 275,-457 216,-469 214,-595 195;lod1|6.28||379 -347,377 -347,377 -356,370 -356,370 -344,377 -344,379 -344;lod1|9.44||266 442,250 440,249 449,265 451;lod1|4.45||311 400,310 407,319 407,323 407,323 401,319 401;lod1|3.33||436 -280,430 -280,430 -279,430 -279,430 -271,431 -271,432 -272,436 -272;lod1|7.22||444 263,436 262,435 272,442 273;lod1|7.78||511 -64,510 -58,508 -58,507 -50,526 -46,528 -59,522 -60,522 -62;lod1|5.82||388 343,391 344,391 346,398 346,399 332,389 331;lod1|9.54||239 461,224 459,222 469,228 470,228 472,232 472,232 471,238 471;lod1|5.82||310 422,318 422,318 416,318 413,319 407,310 407;lod1|5.63||376 356,383 358,384 352,386 352,387 349,385 348,378 347;lod1|7.29||437 -297,426 -297,426 -288,436 -288;lod1|7.32||451 264,451 264,450 264,446 264,444 263,442 273,444 273,447 273,450 274,451 264;lod1|3.8||319 407,318 413,318 416,318 422,321 422,322 417,322 413,322 413,323 407;lod1|6.57||450 -258,454 -258,454 -258,456 -258,456 -258,460 -257,461 -266,451 -267;lod1|6.88||-12 521,-22 518,-24 528,-14 530;lod1|9.89||254 463,239 461,238 471,243 472,243 474,247 474,247 473,252 473;lod1|4.2||292 457,293 452,294 438,282 437,279 456;plot|2.8||-1.6 2.7,0.8 3.2,2.2 -2.1,-0.2 -2.6;plot|3.0||0.5 4.9,3.8 5.6,5.7 -2.7,2.5 -3.5;plot|2.15||2.6 -3.1,5.1 -2.6,5.5 -5.0,3.0 -5.6";
+const BLD_RAW="lod1|4.34||108 -54,106 -44,146 -36,148 -46;lod1|5.09||147 -70,116 -77,117 -78,114 -79,114 -77,104 -79,104 -79,104 -79,100 -58,142 -48;lod1|4.88||137 -86,108 -93,105 -81,114 -79,117 -78,135 -74;lod1|5.85||106 -129,97 -132,97 -132,91 -133,89 -128,82 -129,78 -130,76 -121,80 -120,78 -112,78 -112,91 -109,96 -107,103 -106,104 -113,97 -114,100 -125,105 -124,105 -124,105 -124,106 -129,106 -129;lod1|8.84||103 -95,154 -84,161 -117,111 -128;lod1|4.01||106 -123,105 -124,100 -125,97 -114,104 -113;lod1|4.1||91 -133,80 -136,78 -130,82 -129,89 -128;lod1|3.81||148 -78,136 -80,135 -74,147 -72;lod1|3.74||150 -83,137 -86,136 -80,148 -78;lod1|16.99||-237 -17,-246 29,-187 40,-178 -7;lod1|4.1||170 -115,164 -117,162 -107,161 -108,160 -103,159 -98,164 -97,165 -100,166 -100,167 -103,167 -103,168 -106,167 -106,168 -109,169 -112,169 -114;lod1|7.35||22 190,13 188,10 187,8 197,11 198,12 195,20 197;lod1|7.19||38 193,34 192,34 191,30 190,28 198,37 200;lod1|7.47||69 199,60 198,58 206,68 208;lod1|5.82||40 206,36 205,34 214,38 214;lod1|6.93||211 -104,202 -105,200 -94,202 -93,202 -96,210 -94;lod1|15.9||-326 88,-308 91,-297 94,-297 94,-261 101,-226 108,-216 60,-222 58,-222 55,-241 51,-242 55,-252 53,-264 50,-263 47,-286 42,-287 42,-288 46,-299 44,-317 40,-322 64,-326 87;lod1|4.55||68 224,68 223,71 224,72 222,72 218,66 217,65 221,64 224;lod1|4.47||27 236,17 234,16 239,20 240,20 242,23 243,23 240,26 241;lod1|16.61||-312 17,-246 29,-237 -17,-304 -30;lod1|4.65||93 226,88 225,86 236,91 237;lod1|7.73||26 247,15 245,14 254,24 256;lod1|7.39||99 234,101 234,110 236,113 225,103 223,102 230,99 230;lod1|7.55||58 253,49 252,47 260,56 262;lod1|7.09||240 -124,232 -126,231 -121,229 -121,229 -118,230 -118,230 -117,238 -115;lod1|6.85||243 -146,234 -147,233 -143,231 -143,231 -141,233 -141,232 -137,242 -136;lod1|4.32||159 228,154 227,152 237,158 238;lod1|7.14||246 -165,236 -166,236 -161,232 -162,232 -157,245 -155;lod1|7.94||269 -130,260 -132,258 -122,268 -120;lod1|8.77||179 232,171 230,169 239,177 241;lod1|5.66||52 287,46 286,44 292,51 293;lod1|5.11||6 294,1 293,1 295,0 299,4 300,8 300,9 296,5 296;lod1|13.39||92 -312,50 -343,31 -317,72 -286;lod1|4.58||282 -122,276 -123,275 -115,275 -111,281 -110,281 -114;lod1|7.14||249 -184,240 -186,239 -180,238 -180,237 -178,239 -178,239 -178,239 -177,248 -175;lod1|12.94||-77 -326,-38 -297,2 -352,-37 -381;lod1|3.1||174 255,174 253,181 254,182 250,175 249,171 248,169 254;lod1|7.75||275 -155,273 -155,273 -158,273 -158,264 -159,262 -148,271 -146,272 -148,274 -148;lod1|8.04||-18 312,-11 314,-11 312,-8 313,-7 305,-10 305,-12 304,-12 305,-16 305;lod1|6.81||12 309,2 307,1 315,10 317;lod1|7.88||54 307,42 305,41 309,44 309,43 315,52 316;lod1|7.01||252 -204,244 -206,239 -206,238 -200,240 -200,239 -197,251 -195;lod1|10.25||189 258,181 256,179 264,180 264,179 267,182 267,183 265,187 266;lod1|7.01||266 -167,275 -166,277 -166,278 -172,276 -172,276 -175,267 -177;lod1|9.38||306 -119,300 -119,299 -119,299 -117,295 -118,295 -117,295 -110,301 -110,301 -109,305 -109;lod1|6.15||166 279,161 278,162 277,155 276,153 284,152 283,151 288,164 290;lod1|3.62||293 -146,286 -147,285 -139,292 -138,293 -142;lod1|2.36||253 -210,245 -211,244 -206,252 -204;lod1|6.19||141 295,129 293,128 299,130 299,129 302,139 304;lod1|4.0||267 -177,276 -175,277 -181,268 -182;lod1|5.53||-45 340,-41 340,-41 339,-37 340,-36 333,-36 333,-36 332,-35 332,-35 332,-31 332,-31 332,-29 332,-28 323,-38 321,-39 330,-43 330;lod1|6.68||242 -216,244 -216,244 -215,246 -215,254 -214,254 -214,256 -224,246 -225,245 -219,242 -219;lod1|7.17||81 320,74 319,75 316,73 316,71 327,80 329;lod1|6.07||281 -196,271 -198,269 -187,280 -186;lod1|6.99||-8 330,-16 328,-18 335,-10 337;lod1|5.89||164 303,161 302,162 299,150 297,149 306,159 307,160 305,163 306;lod1|6.7||102 324,98 324,98 321,94 320,92 331,100 333;lod1|5.01||326 -119,317 -119,317 -107,326 -107;lod1|5.77||137 313,128 311,128 314,129 314,128 319,136 321;lod1|6.91||326 -135,317 -135,317 -131,315 -131,315 -126,315 -123,321 -123,322 -126,326 -126;lod1|6.75||246 -232,251 -232,251 -235,257 -234,259 -244,250 -246,249 -239,247 -239;lod1|4.44||242 -242,243 -249,248 -249,249 -252,240 -253,238 -254,237 -251,239 -250,238 -243;lod1|13.11||-310 262,-283 267,-252 273,-226 278,-225 272,-221 273,-220 266,-223 265,-222 259,-306 243,-309 259;lod1|7.68||283 -217,276 -219,275 -216,274 -216,272 -207,281 -206;lod1|3.12||-27 342,-32 341,-34 347,-35 353,-29 354,-28 348;lod1|2.25||-7 349,0 350,1 343,-6 342;lod1|4.3||9 354,9 351,10 351,11 346,9 346,9 345,1 343,0 350,-1 352,-1 353,2 354,2 353,2 352,8 353;lod1|8.51||172 -365,140 -329,180 -293,212 -329;lod1|5.82||159 318,156 317,156 313,148 311,147 319,159 321,159 320;lod1|7.73||200 298,199 298,200 290,196 289,197 287,194 286,193 290,192 290,191 296,200 298;lod1|6.9||77 342,69 341,67 349,68 349,71 349,75 350,76 350;lod1|5.72||316 -149,317 -149,317 -145,326 -145,326 -154,327 -160,317 -160,317 -155,317 -151,316 -151;lod1|5.73||159 321,147 319,146 326,154 327,154 323,158 324;lod1|5.99||134 330,125 328,124 332,123 332,122 337,133 339;lod1|11.71||-37 -381,2 -352,8 -359,-31 -388;lod1|2.97||299 -205,292 -206,291 -199,298 -198;lod1|4.25||66 355,74 356,75 350,71 349,68 349,67 349;lod1|6.63||106 347,95 346,93 356,101 357,101 356,104 356;lod1|8.17||358 -110,355 -110,345 -110,343 -110,343 -110,345 -110,344 -104,344 -101,356 -101,356 -101,355 -101,355 -107,356 -107,356 -110,358 -110;lod1|6.39||264 -259,261 -260,262 -263,254 -264,253 -256,260 -255,260 -254,263 -254;lod1|6.82||286 -234,284 -234,285 -238,277 -240,276 -232,281 -231,284 -230,286 -230;lod1|7.18||154 337,153 337,154 333,144 332,143 340,154 342;lod1|7.65||358 -118,358 -119,356 -119,345 -119,344 -119,344 -119,345 -119,345 -114,345 -110,355 -110,355 -116,356 -116,356 -118;lod1|7.57||344 -128,345 -128,345 -122,345 -119,356 -119,356 -120,357 -122,357 -124,357 -125,356 -125,356 -128,358 -128,358 -128,355 -128,345 -128,344 -129;lod1|6.08||210 310,198 307,197 312,199 312,198 316,209 318;lod1|2.85||263 -273,254 -274,248 -275,247 -271,263 -269;lod1|8.07||358 -137,356 -137,345 -138,344 -138,344 -137,344 -137,345 -137,345 -131,345 -128,355 -128,355 -134,356 -134,356 -137,358 -137;lod1|7.02||327 -196,318 -196,318 -189,320 -189,320 -187,327 -187;lod1|17.92||-313 417,-297 420,-271 288,-256 291,-252 273,-283 267,-287 285,-307 387;lod1|7.9||344 -146,344 -146,344 -146,346 -146,346 -141,345 -138,356 -137,356 -143,357 -143,357 -146,358 -146,358 -146,356 -146,344 -146;lod1|7.04||265 -282,261 -282,262 -284,262 -285,257 -286,256 -283,256 -283,254 -274,263 -273;lod1|7.65||356 -149,355 -149,355 -155,346 -155,346 -152,345 -152,344 -146,356 -146;lod1|6.84||289 -258,280 -260,279 -250,282 -249,282 -248,285 -247,285 -249,288 -249;lod1|4.28||-44 379,-35 381,-33 374,-42 372;lod1|7.04||140 353,130 351,129 361,131 361,131 362,134 363,135 362,138 362;lod1|5.33||391 20,390 20,390 17,381 16,380 21,376 21,375 24,389 25,389 22,391 23;lod1|5.77||328 -219,316 -219,315 -208,327 -208;lod1|2.53||109 362,108 368,116 369,117 363;lod1|3.14||374 -100,368 -100,367 -93,374 -93;lod1|7.0||351 -176,341 -177,341 -167,342 -167,342 -163,344 -163,351 -163,351 -171,351 -171;lod1|6.12||213 324,205 323,204 327,201 326,200 330,212 332;lod1|5.91||212 332,200 330,200 333,203 334,202 338,210 339;lod1|3.37||391 35,393 35,394 35,394 36,399 36,399 33,394 33,387 33,387 35,386 36,386 38,391 38;lod1|22.1||-342 424,-315 429,-313 417,-307 387,-287 285,-283 267,-310 262,-309 259,-312 258,-314 267,-311 268,-316 291,-333 287,-338 309,-320 312,-325 339,-329 338,-330 345,-335 344,-336 350,-333 350,-334 355,-328 356,-330 364,-338 362,-340 373,-332 374,-334 382;lod1|6.43||268 -301,254 -304,253 -298,253 -296,259 -295,260 -294,262 -294,262 -294,263 -294,264 -295,267 -295;lod1|12.77||-13 -418,25 -389,37 -405,18 -419,-1 -434;lod1|3.44||190 341,189 346,197 348,198 342;lod1|2.88||364 -166,357 -166,357 -160,364 -160;lod1|6.21||330 -235,328 -235,328 -239,326 -239,320 -239,320 -231,328 -231,328 -232,330 -232;lod1|3.89||387 -100,387 -109,382 -109,382 -100;lod1|11.4||99 -400,100 -399,138 -370,162 -403,163 -403,163 -403,163 -404,169 -412,154 -423,154 -423,152 -425,148 -427,148 -427,130 -441,124 -433,124 -433,123 -433,124 -433;lod1|6.42||366 166,361 166,361 174,366 174,366 170,366 170;lod1|9.18||407 33,399 33,399 36,399 36,399 38,396 38,397 40,399 40,399 42,407 42;lod1|3.65||296 274,290 273,289 282,295 283;lod1|3.35||355 182,354 189,383 192,384 187,379 186,369 186,360 185,360 184,360 182;lod1|7.03||409 13,399 12,398 23,408 24;lod1|6.52||212 345,203 343,203 347,201 347,200 352,211 353;lod1|2.68||326 -244,327 -248,318 -248,318 -244,320 -244,320 -239,326 -239;lod1|4.51||305 -277,302 -278,301 -268,300 -264,304 -264,304 -267;lod1|6.15||303 269,297 268,296 274,295 283,300 284;lod1|8.05||298 -282,290 -291,283 -284,292 -276;lod1|7.11||410 -13,402 -13,402 -4,410 -4;lod1|4.92||380 167,379 167,377 167,367 166,366 166,366 170,376 171,375 176,379 176;lod1|3.44||379 184,379 183,370 182,360 182,360 184,360 185,369 186,379 186,384 187,384 184;lod1|3.19||397 135,397 130,393 128,393 129,385 127,384 131,384 131,384 134,386 134,387 132,391 133;lod1|3.97||-337 261,-334 262,-331 249,-331 249,-329 238,-329 238,-329 238,-334 237,-337 248,-334 249;lod1|6.94||330 -258,328 -258,328 -262,320 -262,320 -254,320 -254,320 -250,328 -250,328 -255,330 -254;lod1|11.65||18 -419,37 -405,88 -471,69 -486,68 -485;lod1|4.91||352 -226,347 -228,345 -224,343 -219,352 -215,354 -220,351 -222;lod1|5.85||-1 409,-10 407,-15 435,-6 436;lod1|9.08||408 -94,408 -105,398 -105,399 -94;lod1|7.47||319 272,310 270,309 278,314 279,315 279,316 279,318 279;lod1|7.06||240 345,230 345,230 355,242 355,242 357,246 358,246 352,242 352,242 349,240 349;lod1|7.63||405 170,380 167,379 176,404 178;lod1|8.67||407 -122,406 -140,398 -139,397 -139,397 -133,395 -132,395 -130,397 -130,397 -121;lod1|5.83||406 122,398 121,398 130,397 130,397 135,405 136;lod1|4.05||-358 -213,-361 -216,-368 -209,-364 -206;lod1|8.12||358 -242,349 -248,342 -237,348 -233,350 -236,351 -235,353 -233;lod1|8.46||210 370,206 369,206 367,200 366,199 371,196 370,195 374,198 374,198 378,208 379;lod1|4.03||-364 -206,-368 -209,-368 -210,-374 -204,-370 -200;lod1|9.81||-1 -434,18 -419,68 -485,69 -486,72 -490,52 -504;lod1|9.03||404 146,395 145,394 154,403 154;lod1|8.82||407 -140,406 -152,397 -152,398 -141,398 -139,406 -140;lod1|9.12||376 -198,377 -192,377 -189,381 -189,381 -190,390 -191,400 -192,399 -206,399 -212,390 -212,390 -205,391 -205,391 -199,389 -199,380 -198;lod1|8.65||403 154,394 154,393 166,402 166;lod1|4.73||-73 417,-82 416,-83 425,-74 426,-74 423;lod1|8.57||388 -176,388 -171,394 -171,394 -173,404 -174,403 -188,393 -187,394 -181,392 -181,392 -179,394 -179,394 -176;lod1|6.25||394 -165,394 -162,394 -159,406 -159,405 -169,396 -168,396 -165;lod1|6.09||-25 434,-74 423,-74 426,-76 436,-76 436,-67 438,-28 446,-28 446;lod1|7.18||446 2,444 2,444 -3,433 -4,433 10,443 10,443 4,446 4;lod1|7.74||447 -16,444 -16,444 -23,444 -23,434 -23,433 -7,443 -8,444 -13,446 -13;lod1|9.35||-471 -300,-399 -229,-391 -238,-386 -242,-376 -253,-365 -242,-364 -240,-358 -246,-362 -249,-359 -251,-360 -252,-348 -264,-357 -273,-363 -279,-429 -343,-442 -330,-443 -329,-445 -328,-444 -328,-456 -315,-457 -316,-458 -314,-458 -313;lod1|9.93||447 48,445 47,445 45,433 43,432 52,444 53,445 51,447 51;lod1|7.54||456 19,436 18,435 28,452 28,453 28,456 28;lod1|6.26||453 28,452 28,435 28,435 41,452 42,452 36,451 36,452 32,453 32;lod1|8.77||445 -39,445 -50,435 -50,435 -39;lod1|23.27||-365 -242,-376 -253,-386 -242,-376 -232,-368 -240,-368 -239;lod1|6.59||209 394,203 394,203 396,191 395,191 397,193 397,192 406,190 406,190 409,202 410,203 399,209 400;lod1|16.05||-429 -343,-363 -279,-334 -308,-327 -302,-318 -311,-316 -308,-314 -308,-313 -312,-315 -314,-311 -318,-309 -326,-312 -330,-309 -334,-322 -346,-322 -345,-325 -342,-329 -346,-360 -376,-379 -395;lod1|7.29||431 -99,431 -93,431 -91,432 -85,441 -86,440 -92,440 -94,440 -100;lod1|11.0||4 -607,2 -609,6 -614,-11 -631,-11 -632,-15 -636,-24 -628,-44 -648,-61 -630,-66 -636,-241 -458,-184 -403,-173 -414,-169 -410,-161 -419,-156 -414,-158 -412,-158 -412,-124 -446,-133 -455,-21 -569,-30 -578,-2 -606,1 -609,4 -607;lod1|4.9||-67 438,-76 436,-78 442,-69 444;lod1|3.7||-28 446,-67 438,-69 444,-29 452;lod1|11.1||433 141,431 141,434 124,426 123,422 146,432 147;lod1|4.56||362 286,342 283,341 291,361 294;lod1|8.48||438 -122,437 -130,429 -129,429 -121;lod1|7.65||439 -133,439 -138,437 -138,428 -137,429 -129,437 -130,437 -133;lod1|6.67||398 224,390 223,390 234,382 234,382 239,397 240;lod1|6.54||383 -262,380 -263,381 -267,378 -268,378 -270,373 -272,372 -271,368 -272,366 -264,378 -258,381 -257;lod1|3.41||389 272,362 269,362 274,370 279,389 279;lod1|2.72||457 1,456 -6,452 -6,452 1,453 3,458 3;lod1|5.68||-388 -234,-391 -238,-399 -229,-395 -226;lod1|7.25||428 -148,441 -146,442 -156,429 -158;lod1|4.26||-66 449,-76 447,-77 452,-67 454;lod1|10.99||435 163,424 162,422 184,422 184,430 185,433 185,434 185;lod1|2.96||471 -67,471 -73,466 -73,462 -72,457 -72,457 -73,452 -74,452 -68,453 -68,452 -64,456 -64,456 -62,471 -62;lod1|4.28||-120 469,-118 459,-118 459,-117 454,-113 454,-112 449,-109 450,-108 444,-118 442,-121 458,-123 469;lod1|6.14||392 262,376 260,376 267,391 269;lod1|6.1||456 -50,458 -41,469 -43,468 -52,463 -51,463 -54,459 -54,459 -50;lod1|7.55||335 327,325 326,323 342,333 343,333 342,334 338;lod1|10.12||430 185,422 184,422 186,421 186,420 197,421 197,421 199,429 200;lod1|3.63||365 -288,364 -282,378 -280,378 -286;lod1|4.39||455 137,443 135,442 141,454 143;lod1|6.73||401 -254,401 -267,391 -267,391 -264,391 -262,390 -262,390 -259,391 -259,391 -253;lod1|3.61||392 -268,392 -276,387 -275,387 -268,387 -267,387 -264,391 -264,391 -267,391 -268;lod1|3.8||-84 463,-91 462,-95 481,-88 483;lod1|3.77||-94 461,-101 460,-105 480,-98 481;lod1|2.79||451 191,451 190,452 190,453 187,451 187,448 187,444 186,444 186,437 186,434 185,433 185,433 190,436 190,444 191;lod1|4.12||-59 468,-68 466,-72 486,-63 488;lod1|2.93||458 -146,458 -148,466 -147,466 -151,459 -152,452 -154,452 -154,447 -155,446 -152,452 -150,451 -148;lod1|4.64||-52 469,-59 468,-63 488,-56 489;lod1|3.4||-47 470,-52 469,-56 489,-51 490;lod1|3.96||-40 472,-47 470,-51 490,-44 492;lod1|8.18||433 -227,423 -227,423 -211,433 -211;lod1|6.53||-110 463,-116 462,-116 459,-118 459,-118 459,-120 469,-111 471;lod1|10.23||401 273,389 272,389 279,389 281,389 282,401 283;lod1|3.67||386 294,376 292,375 297,380 298,381 299,384 299,386 298,386 298;lod1|6.18||492 -23,491 -32,477 -31,477 -22;lod1|6.52||278 403,274 402,274 402,274 402,274 399,275 398,269 398,269 398,265 398,263 407,268 407,267 408,270 409,271 408,277 409;lod1|11.37||69 -486,88 -471,92 -478,93 -477,93 -477,92 -485,92 -485,92 -484,89 -486,88 -488,87 -488,86 -488,76 -496,72 -490;lod1|3.52||391 290,389 290,386 291,386 294,386 298,391 299,391 298;lod1|6.41||401 285,392 285,391 290,391 298,400 299;lod1|7.03||491 -94,485 -95,485 -96,478 -97,476 -89,483 -88,483 -85,489 -84;lod1|6.0||-332 -358,-347 -374,-349 -372,-352 -369,-336 -354,-334 -357;lod1|2.49||454 -220,454 -223,442 -225,442 -225,437 -226,436 -224,436 -222,442 -221,442 -221;lod1|3.86||238 430,235 430,234 432,237 432,247 434,246 439,250 440,250 437,251 432,248 431,246 431;lod1|5.79||383 -334,378 -335,378 -336,373 -336,373 -335,373 -335,373 -331,374 -331,374 -318,380 -318,382 -318,382 -318,382 -323;lod1|2.58||453 -213,449 -213,448 -208,452 -208,457 -207,458 -212;lod1|9.86||342 366,343 366,342 374,353 376,356 358,345 356,344 362,342 362;lod1|7.89||250 440,246 439,234 437,233 447,249 449;lod1|5.63||506 41,499 39,496 50,502 52;lod1|6.55||430 -279,430 -279,422 -280,422 -274,421 -274,421 -274,421 -273,420 -272,421 -272,422 -272,421 -267,429 -266,430 -271;lod1|2.29||379 -340,379 -344,377 -344,370 -344,367 -344,367 -341;lod1|6.6||502 -123,490 -126,487 -116,491 -115,497 -114,500 -113;lod1|3.79||509 25,503 23,500 33,506 35;lod1|7.16||436 262,428 261,428 266,426 267,427 268,427 270,435 272;lod1|5.6||-271 -440,-261 -429,-254 -436,-264 -447;lod1|6.59||400 316,391 316,391 325,391 328,399 328;lod1|8.6||401 -327,391 -328,391 -318,401 -317;lod1|11.48||-622 371,-598 374,-596 357,-593 341,-479 359,-478 359,-474 333,-468 334,-460 281,-466 280,-466 275,-457 216,-469 214,-595 195;lod1|6.28||379 -347,377 -347,377 -356,370 -356,370 -344,377 -344,379 -344;lod1|9.44||266 442,250 440,249 449,265 451;lod1|4.45||311 400,310 407,319 407,323 407,323 401,319 401;lod1|3.33||436 -280,430 -280,430 -279,430 -279,430 -271,431 -271,432 -272,436 -272;lod1|7.22||444 263,436 262,435 272,442 273;lod1|7.78||511 -64,510 -58,508 -58,507 -50,526 -46,528 -59,522 -60,522 -62;lod1|5.82||388 343,391 344,391 346,398 346,399 332,389 331;lod1|9.54||239 461,224 459,222 469,228 470,228 472,232 472,232 471,238 471;lod1|5.82||310 422,318 422,318 416,318 413,319 407,310 407;lod1|5.63||376 356,383 358,384 352,386 352,387 349,385 348,378 347;lod1|7.29||437 -297,426 -297,426 -288,436 -288;lod1|7.32||451 264,451 264,450 264,446 264,444 263,442 273,444 273,447 273,450 274,451 264;lod1|3.8||319 407,318 413,318 416,318 422,321 422,322 417,322 413,322 413,323 407;lod1|6.57||450 -258,454 -258,454 -258,456 -258,456 -258,460 -257,461 -266,451 -267;lod1|6.88||-12 521,-22 518,-24 528,-14 530;lod1|9.89||254 463,239 461,238 471,243 472,243 474,247 474,247 473,252 473;lod1|4.2||292 457,293 452,294 438,282 437,279 456;plot|2.8||-1.6 2.7,0.8 3.2,2.2 -2.1,-0.2 -2.6;plot|3.0||0.5 4.9,3.8 5.6,5.7 -2.7,2.5 -3.5;plot|2.15||2.6 -3.1,5.1 -2.6,5.5 -5.0,3.0 -5.6;rod|3.0||-68.0 94.5,-61.0 94.5,-61.0 100.0,-68.0 100.0;rod|3.0||-64.6 83.8,-59.4 83.8,-59.4 88.8,-64.6 88.8;rod|2.2||-49.0 89.0,-46.9 89.0,-46.9 92.5,-49.0 92.5;rod|4.0||-63.8 70.4,-55.9 70.4,-55.9 76.3,-63.8 76.3;rod|2.2||-44.0 64.8,-40.0 64.8,-40.0 67.5,-44.0 67.5;rod|4.0||-59.8 56.0,-51.9 56.0,-51.9 61.9,-59.8 61.9;rod|2.2||-44.0 39.6,-40.0 39.6,-40.0 42.5,-44.0 42.5;rod|2.2||-46.5 34.6,-42.3 34.6,-42.3 37.1,-46.5 37.1;rod|2.2||-29.4 87.5,-26.9 87.5,-26.9 89.6,-29.4 89.6;rod|2.2||-29.6 85.0,-26.6 85.0,-26.6 87.1,-29.6 87.1;rod|4.0||-21.5 90.3,-11.0 90.3,-11.0 98.0,-21.5 98.0;rod|2.2||-4.6 82.3,-1.3 82.3,-1.3 85.3,-4.6 85.3;rod|4.0||-24.6 61.0,-17.1 61.0,-17.1 71.5,-24.6 71.5;rod|3.0||-12.5 68.0,-9.1 68.0,-9.1 73.4,-12.5 73.4;rod|4.0||-9.0 67.1,-1.9 67.1,-1.9 73.1,-9.0 73.1;rod|3.0||-10.2 55.5,-4.4 55.5,-4.4 60.2,-10.2 60.2;rod|2.2||-8.4 60.2,-5.9 60.2,-5.9 62.9,-8.4 62.9;rod|3.0||-19.4 55.6,-15.6 55.6,-15.6 59.8,-19.4 59.8;rod|3.0||6.0 87.1,9.4 87.1,9.4 91.2,6.0 91.2;rod|2.2||24.0 85.4,26.0 85.4,26.0 88.1,24.0 88.1;rod|3.0||39.8 81.2,44.0 81.2,44.0 84.4,39.8 84.4;rod|3.0||43.5 69.4,48.1 69.4,48.1 72.5,43.5 72.5;rod|4.0||21.0 61.2,28.8 61.2,28.8 68.1,21.0 68.1;rod|3.0||51.5 91.2,57.8 91.2,57.8 93.8,51.5 93.8;rod|2.2||62.5 93.1,65.6 93.1,65.6 96.5,62.5 96.5;rod|4.0||67.9 89.4,77.5 89.4,77.5 98.5,67.9 98.5;rod|4.0||56.9 71.5,63.8 71.5,63.8 81.9,56.9 81.9;rod|4.0||71.6 77.5,79.0 77.5,79.0 84.8,71.6 84.8;rod|3.0||74.1 69.0,77.9 69.0,77.9 74.0,74.1 74.0;rod|4.0||56.2 45.2,66.0 45.2,66.0 53.1,56.2 53.1;rod|3.0||77.5 54.0,81.9 54.0,81.9 57.2,77.5 57.2;rod|4.0||92.2 39.4,98.8 39.4,98.8 47.8,92.2 47.8;rod|3.0||95.0 32.5,99.6 32.5,99.6 39.4,95.0 39.4;rod|3.0||73.4 38.1,78.4 38.1,78.4 44.6,73.4 44.6;rod|2.2||87.5 38.8,90.2 38.8,90.2 42.5,87.5 42.5;rod|2.2||64.4 34.4,68.1 34.4,68.1 37.5,64.4 37.5;rod|4.0||44.8 35.0,52.9 35.0,52.9 40.2,44.8 40.2;rod|4.0||29.1 29.6,41.0 29.6,41.0 37.5,29.1 37.5;rod|3.0||34.0 38.5,38.1 38.5,38.1 42.2,34.0 42.2;rod|3.0||5.0 25.0,13.1 25.0,13.1 28.8,5.0 28.8;rod|3.0||0.0 56.9,6.9 56.9,6.9 59.8,0.0 59.8;rod|3.0||13.8 55.2,18.5 55.2,18.5 58.8,13.8 58.8;rod|3.0||-49.0 14.0,-43.5 14.0,-43.5 20.0,-49.0 20.0;rod|3.0||-22.5 22.0,-16.9 22.0,-16.9 26.0,-22.5 26.0;rod|4.0||-11.2 15.6,0.0 15.6,0.0 25.0,-11.2 25.0;rod|3.0||-12.5 6.5,-5.0 6.5,-5.0 9.4,-12.5 9.4;rod|3.0||-45.0 -3.8,-40.0 -3.8,-40.0 0.0,-45.0 0.0;rod|2.2||-8.8 -23.8,-6.9 -23.8,-6.9 -21.2,-8.8 -21.2;rod|2.2||-20.0 -43.1,-16.9 -43.1,-16.9 -40.0,-20.0 -40.0;rod|3.0||5.0 22.0,10.0 22.0,10.0 26.0,5.0 26.0;rod|2.2||7.2 16.5,11.9 16.5,11.9 19.0,7.2 19.0;rod|3.0||20.6 0.6,24.8 0.6,24.8 3.5,20.6 3.5;rod|4.0||1.9 -16.0,9.0 -16.0,9.0 -10.0,1.9 -10.0;rod|2.2||10.0 -16.9,11.9 -16.9,11.9 -14.8,10.0 -14.8;rod|2.2||18.0 -15.8,19.8 -15.8,19.8 -13.5,18.0 -13.5;rod|2.2||10.0 -27.5,13.1 -27.5,13.1 -24.0,10.0 -24.0;rod|2.2||5.6 -31.2,9.8 -31.2,9.8 -29.4,5.6 -29.4;rod|2.2||6.0 -35.9,9.8 -35.9,9.8 -32.8,6.0 -32.8;rod|2.2||19.4 -34.0,22.5 -34.0,22.5 -31.2,19.4 -31.2;rod|2.2||0.0 21.0,3.0 21.0,3.0 23.0,0.0 23.0;rod|3.0||38.0 22.8,42.5 22.8,42.5 26.0,38.0 26.0;rod|2.2||92.0 22.0,93.8 22.0,93.8 24.4,92.0 24.4;rod|3.0||97.0 15.0,100.0 15.0,100.0 20.0,97.0 20.0";
 const BLD_DEF={indus:10,wareh:9,comme:9,apart:15,house:8,detac:8,resid:8,garag:3,outbu:3.5,const:6,chape:10,yes:7};
 const BLD=BLD_RAW.split(';').map(r=>{const [t,h,l,g]=r.split('|');const poly=g.split(',').map(p=>p.split(' ').map(Number));
   const H=h?parseFloat(h):l?parseFloat(l)*3+2:(BLD_DEF[t]||7);return {t,H,src:t==='lod1'?'lod1':h?'tag':l?'kond.':'typ',poly};});
@@ -1112,7 +1173,8 @@ function bearing(la1,lo1,la2,lo2){const r=Math.PI/180,y=Math.sin((lo2-lo1)*r)*Ma
 const DX=DXT.map(([n,la,lo])=>[n,bearing(SITECFG.lat,SITECFG.lon,la,lo)]);
 const state={tab:'delta',ground:'avg',sel:310,el:10};
 const P={
-  delta:{f:7.1,apex:7,bottom:2.5,orient:40,feed:'corner',balun:4},
+  delta:{f:7.1,apex:7,bottom:2.5,orient:40,feed:'corner',balun:4,mb:false,fDesign:3.6,match:'radio'},
+  hdelta:{f:3.65,feedPos:'corner',match:'radio',balun:4,beamAz:0,corners:null},
   dipole:{f:7.1,height:7,arm1:220,spread:180,cx:0,cy:0,shape:'flat',feedSys:'balun11'},
   eatu:{QL:100},
   y15:{f:21.2,height:12,beamAz:310,design:'5el'},
@@ -1123,17 +1185,27 @@ const P={
 };
 for(const k in (SITECFG.defaults||{}))Object.assign(P[k],SITECFG.defaults[k]);
 if(P.dipole.wireAz!=null){P.dipole.arm1=(P.dipole.wireAz+180)%360;delete P.dipole.wireAz;}
+// horizontal delta default corners: the three masts, or three parcel vertices (largest triangle) moved 1 m inward
+if(!P.hdelta.corners){const ms=SITECFG.masts||[];
+  if(ms.length>=3)P.hdelta.corners=ms.slice(0,3).map(m=>({src:m.id,e:m.pos[0],n:m.pos[1],h:6}));
+  else{const Pg=SITECFG.parcel||[[-10,-10],[10,-10],[0,10]],cx=Pg.reduce((a,q)=>a+q[0],0)/Pg.length,cy=Pg.reduce((a,q)=>a+q[1],0)/Pg.length;let best=null;
+    for(let i=0;i<Pg.length;i++)for(let j=i+1;j<Pg.length;j++)for(let k=j+1;k<Pg.length;k++){const A=Pg[i],B=Pg[j],C0=Pg[k],ar=Math.abs((B[0]-A[0])*(C0[1]-A[1])-(C0[0]-A[0])*(B[1]-A[1]));if(!best||ar>best.ar)best={ar,v:[A,B,C0]};}
+    const V=best.v.map(q=>{const dx=cx-q[0],dy=cy-q[1],d=Math.hypot(dx,dy)||1;return [q[0]+dx/d,q[1]+dy/d];}),per=[0,1,2].reduce((a,i)=>a+Math.hypot(V[(i+1)%3][0]-V[i][0],V[(i+1)%3][1]-V[i][1]),0);
+    const gx=(V[0][0]+V[1][0]+V[2][0])/3,gy=(V[0][1]+V[1][1]+V[2][1])/3,k=Math.min(1,84/per);   // about a full wave on 80 m if the parcel allows
+    P.hdelta.corners=V.map(q=>({src:'pt',e:Math.round((gx+(q[0]-gx)*k)*10)/10,n:Math.round((gy+(q[1]-gy)*k)*10)/10,h:7}));}}
+function hdCorners(){return P.hdelta.corners.map(c=>{const m=c.src!=='pt'&&(SITECFG.masts||[]).find(x=>x.id===c.src);return {src:c.src,e:m?m.pos[0]:c.e,n:m?m.pos[1]:c.n,h:c.h};});}
+const dVF=p=>wireVF(p.mb?p.fDesign:p.f);
 // DX-Wire data (dx-wire.de table): conductor cross-section [mm²] (all metal), outer Ø [mm], insulation εr
 const WIRES={UL:{A:0.3,D:1.5,er:2.3,n:'DX-Wire UL'},FL:{A:1.0,D:2.1,er:2.3,n:'DX-Wire FL'},FS:{A:2.0,D:2.8,er:2.3,n:'DX-Wire FS'},
   HDL:{A:1.97,D:3.0,er:2.3,n:'DX-Wire HDL'},PREMIUM:{A:1.17,D:2.0,er:2.1,n:'DX-Wire PREMIUM'},BARE:{n:'goły drut'}};
 state.bld=true; state.metal=true; state.planR=SITECFG.planR||500; state.coax={type:'rg58',len:20};
-state.wire='UL'; state.vfCustom=0.975; state.fitMsg=''; state.mastMsg=''; state.view='ant'; state.mastSelId=null; state.engine='nec'; state.nb={type:'',dist:20,brg:130,term:'50'}; state.nbAuto=true;
+state.noise={env:SITECFG.noiseEnv||'res',nf:10,houses:true}; state.wire='UL'; state.vfCustom=0.975; state.fitMsg=''; state.mastMsg=''; state.view='ant'; state.mastSelId=null; state.engine='nec'; state.nb={type:'',dist:20,brg:130,term:'50'}; state.nbAuto=true;
 function wireRadius(){const w=WIRES[state.wire];return (w&&w.A?Math.sqrt(w.A/Math.PI):Math.sqrt(1/Math.PI))*1e-3;}
 // insulation shortening: VF = 1/sqrt(1 + (1-1/εr)·ln(b/a) / ln(Lhalf/a))
 function wireVF(f){const w=WIRES[state.wire]; if(state.wire==='CUSTOM')return state.vfCustom; if(!w||!w.A)return 1;
   const a=Math.sqrt(w.A/Math.PI)*1e-3, b=w.D/2*1e-3, Lh=(143/f)/2;
   return 1/Math.sqrt(1+(1-1/w.er)*Math.log(b/a)/Math.log(Lh/a));}
-const TABNAME={delta:'Pionowa delta',dipole:'Dipol',y15:'Yagi 15 m',y10:'Yagi 10 m',a3s:'Cushcraft A3S',hex:'Hexbeam',quad:'Quad Cubex SkyMaster III'};
+const TABNAME={delta:'Pionowa delta',dipole:'Dipol',y15:'Yagi 15 m',y10:'Yagi 10 m',a3s:'Cushcraft A3S',hex:'Hexbeam',quad:'Quad Cubex SkyMaster III',hdelta:'Delta pozioma'};
 const bandName=f=>f<2?'160 m':f<4.1?'80 m':f<5.5?'60 m':f<7.4?'40 m':f<10.2?'30 m':f<14.4?'20 m':f<18.2?'17 m':f<21.5?'15 m':f<25?'12 m':'10 m';
 const norm=v=>((Math.round(v)%360)+360)%360;
 function nbParse(type){const [tab,des]=String(type||'').split(':');return {tab,des};}
@@ -1141,7 +1213,7 @@ function nbSame(type,t){const n=nbParse(type);return n.tab===t&&(t!=='y15'||(n.d
 function nbParams(type){return keyParams(String(type));}
 function nbName(type){const n=nbParse(type);return n.tab==='y15'?'Yagi 15 m '+(n.des||P.y15.design).replace('el',' el.'):TABNAME[n.tab];}
 function antKey(tab,p){return tab==='y15'?'y15:'+p.design:tab;}
-const ANTNAME={'y15:5el':'Yagi 5 el. 15 m','y15:4el':'Yagi 4 el. 15 m',a3s:'A3S',y10:'Yagi 10 m',hex:'Hexbeam',quad:'Quad Cubex',delta:'Delta',dipole:'Dipol'};
+const ANTNAME={'y15:5el':'Yagi 5 el. 15 m','y15:4el':'Yagi 4 el. 15 m',a3s:'A3S',y10:'Yagi 10 m',hex:'Hexbeam',quad:'Quad Cubex',delta:'Delta',dipole:'Dipol',hdelta:'Delta pozioma'};
 state.mastAssign={};(SITECFG.masts||[]).forEach(m=>{if(m.ant)state.mastAssign[m.ant]=m.id;});
 function mastFor(tab,p){const id=state.mastAssign[antKey(tab,p)];return (SITECFG.masts||[]).find(m=>m.id===id)||null;}
 function antPos(tab,p){const m=mastFor(tab,p);return m?m.pos:tab==='dipole'?[p.cx||0,p.cy||0]:null;}
@@ -1189,7 +1261,7 @@ function beamOfKey(key){const tab=key.split(':')[0];return tab==='delta'||tab===
 function setBeamOfKey(key,b){const tab=key.split(':')[0];if(tab==='delta'||tab==='dipole')setBeamOf(tab,b);else setKeyParam(key,'beamAz',norm(b));}
 function mastLabel(m){const a=Object.keys(state.mastAssign).filter(k=>state.mastAssign[k]===m.id&&SITECFG.tabs.includes(k.split(':')[0])).map(k=>ANTNAME[k]);return m.id+(a.length?': '+a.join(', '):'');}
 function metalExtra(t,p){
-  const M=SITECFG.metal, m=mastFor(t,p)||(t==='dipole'?{id:'C',pos:antPos(t,p)}:null); if(!state.metal||!M||!m)return null;
+  const M=SITECFG.metal, m=mastFor(t,p)||(t==='dipole'?{id:'C',pos:antPos(t,p)}:t==='hdelta'?{id:'H',pos:[0,0]}:null); if(!state.metal||!M||!m)return null;
   const b=beamOf(t)*Math.PI/180,c=Math.cos(b),s=Math.sin(b);
   const toFrame=q=>{const x=q[0]-m.pos[0],y=q[1]-m.pos[1];return [x*c-y*s,x*s+y*c];};   // inverse of rotateSegs
   const wires=[];for(const o of M)wires.push(...wireBox(o.poly.map(toFrame),o.z0,o.z1,1.0));
@@ -1214,6 +1286,7 @@ function beamOf(t){const p=P[t];if(t==='delta')return (p.orient+270)%360;if(t===
 function setBeamOf(t,b){b=norm(b);const p=P[t];if(t==='delta')p.orient=(b+90)%180;else if(t==='dipole')p.arm1=norm(b-Math.floor(p.spread/2));else p.beamAz=b;}
 function buildAnt(){const t=state.tab,p=P[t];
   if(t==='hex'||t==='quad')return buildDipole({f:p.f,height:p.height,wireAz:(p.beamAz+90)%180,shape:'flat'});
+  if(t==='hdelta')return buildDipole({f:p.f,height:6,wireAz:90,shape:'flat'});
   if(t==='delta')return buildDelta({...p,vf:wireVF(p.f)});
   if(t==='dipole')return buildDipole({...p,vf:wireVF(p.f)});
   return buildYagi(p);}
@@ -1248,6 +1321,71 @@ function reduceSegs(segs,lam){const mag=q=>Math.hypot(...(q.Ic||[1,0]))*Math.hyp
       flush();}
     g={dl:q.dl.slice(),r:q.r.map(v=>v*l),w:l,ic:[ic[0]*l,ic[1]*l],last:q};}
   flush();return out;}
+// ---- delta optimiser: apex fixed on its mast; search bottom height × feed point × orientation (and balun) with NEC-2 + terrain correction
+let optRun=0, optBest=null;
+const FEEDNAME={corner:'narożnik',side:'¼λ od góry',base:'środek dołu'};
+async function optimizeDelta(){
+  const my=++optRun, p0=P.delta, tgt=norm(+$('dOptAz').value||0), els=[5,7,9,11,13,15], swrOnly=$('dOptSwr').checked&&!P.delta.mb;
+  const o={f:p0.f,ground:state.ground,AZ:[tgt],EL:els,noNorm:true}, TT=terrainWithBuildings(), lam=299.8/p0.f;
+  const pos=antPos('delta',p0)||[0,0], Pg=SITECFG.parcel, vf=dVF(p0), gr=GROUNDS[state.ground];
+  const bottoms=[];for(let b=1;b<=Math.min(5,p0.apex-1)+1e-9;b+=0.5)bottoms.push(b);
+  const feeds=['corner','side','base'], total=bottoms.length*feeds.length; let done=0, noFit=0, tried=0;
+  const hint=$('dOptHint'); hint.classList.remove('err'); $('dOptGo').disabled=true;
+  const score=(res,segs0,orient)=>{const beam=(orient+270)%360,ant={segs:rotateSegs(segs0,beam),zc:res.zc,kind:'delta'};
+    const St=compute(ant,o,TT,false),Sf=compute(ant,o,TT,true);let lin=0;
+    els.forEach((el,j)=>{const c=Math.max(-30,Math.min(12,St.G[0][j]-Sf.G[0][j]));lin+=Math.pow(10,(necGain(res,tgt-beam,el)+c)/10);});return 10*Math.log10(lin/els.length);};
+  const fits=(halfB,orient)=>{if(!Pg)return true;const t=orient*RAD,d=[Math.sin(t)*halfB,Math.cos(t)*halfB];
+    return [[pos[0]+d[0],pos[1]+d[1]],[pos[0]-d[0],pos[1]-d[1]]].every(q=>inPoly(q,Pg)&&edgeDist(q,Pg)>=FIT_MARGIN);};
+  const swrOf=(Z,R0)=>{const r=Math.hypot(Z.R-R0,Z.X)/Math.hypot(Z.R+R0,Z.X);return (1+r)/(1-r);};
+  const cands=[];
+  try{
+    for(const feed of feeds)for(const bottom of bottoms){
+      if(my!==optRun)return;
+      hint.textContent=`Liczę… wariant ${++done} z ${total} (zasilanie: ${FEEDNAME[feed]}, dolny drut ${bottom.toFixed(1)} m)`;
+      const res=await necAnalyze('delta',{...p0,bottom,feed},wireRadius(),gr);
+      const s1=swrOf(res.Z,50),s4=swrOf(res.Z,200),balun=p0.mb?4:(s4<s1?4:1),swr=p0.mb?s4:Math.min(s1,s4);
+      let feedLoss;if(p0.mb&&p0.match==='eatu'){const a=lNetwork({R:res.Z.R/4,X:res.Z.X/4},p0.f,50,P.eatu.QL);feedLoss=(a?a.lossDb:3)+coaxLoss(state.coax.type,p0.f,state.coax.len,0).TL;}
+      else{const R0=50*balun,gm=Math.hypot(res.Z.R-R0,res.Z.X)/Math.hypot(res.Z.R+R0,res.Z.X);feedLoss=coaxLoss(state.coax.type,p0.f,state.coax.len,Math.min(0.999,gm)).TL;}
+      const halfB=res.info.b*vf/2, segs0=reduceSegs(res.segs,lam);
+      let best=null;
+      for(let orient=0;orient<180;orient+=3){tried++;if(!fits(halfB,orient)){noFit++;continue;}const g=score(res,segs0,orient)-feedLoss;if(!best||g>best.g)best={g,orient};}
+      if(best){for(let d=-2;d<=2;d++){const or=(best.orient+d+180)%180;if(d===0||!fits(halfB,or))continue;const g=score(res,segs0,or)-feedLoss;if(g>best.g)best={g,orient:or};}
+        cands.push({feed,bottom:res.info.bottom,orient:best.orient,g:best.g,swr,balun,Z:res.Z,base:res.info.b*vf});}
+      await new Promise(r=>setTimeout(r,0));
+    }
+    // current layout for comparison
+    const cur=await necAnalyze('delta',p0,wireRadius(),gr), gCur=score(cur,reduceSegs(cur.segs,lam),p0.orient)-(()=>{if(p0.mb&&p0.match==='eatu'){const a=lNetwork({R:cur.Z.R/4,X:cur.Z.X/4},p0.f,50,P.eatu.QL);return (a?a.lossDb:3)+coaxLoss(state.coax.type,p0.f,state.coax.len,0).TL;}const R0=50*(p0.mb?4:(p0.balun||1)),gm=Math.hypot(cur.Z.R-R0,cur.Z.X)/Math.hypot(cur.Z.R+R0,cur.Z.X);return coaxLoss(state.coax.type,p0.f,state.coax.len,Math.min(0.999,gm)).TL;})(), curFits=fits(cur.info.b*vf/2,p0.orient);
+    const ok=cands.filter(c=>!swrOnly||c.swr<=2).sort((a,b)=>b.g-a.g);
+    if(!cands.length){hint.classList.add('err');hint.textContent=`Żaden układ nie mieści się w działce z tego ${mastFor('delta',p0)?'masztu':'miejsca'}: podstawa delty jest za długa. Wybierz wyższe pasmo, inny maszt albo wyższy wierzchołek.`;return;}
+    if(!ok.length){hint.classList.add('err');hint.textContent='Żaden układ, który mieści się w działce, nie ma SWR ≤ 2 ani z balunem 1:1, ani 4:1. Odznacz ten warunek, żeby zobaczyć najlepszy układ bez względu na SWR.';return;}
+    const b=ok[0], apply=curFits?b.g>gCur+0.05:true; optBest=b;
+    if(apply)Object.assign(P.delta,{bottom:b.bottom,feed:b.feed,orient:b.orient},p0.mb?{}:{balun:b.balun});
+    const perFeed=feeds.map(fd=>ok.find(c=>c.feed===fd)).filter(Boolean);
+    const beam=(b.orient+270)%360;
+    $('dOptApply').hidden=apply;
+    hint.textContent=`Najlepszy układ dla ${tgt}°${apply?' (ustawiony)':''}: dolny drut ${b.bottom.toFixed(1)} m, linia dolnego drutu ${b.orient}°–${b.orient+180}° (wiązki ${beam}° i ${(beam+180)%360}°), zasilanie: ${FEEDNAME[b.feed]}, ${p0.mb?'z tunerem':'balun '+b.balun+':1, SWR '+b.swr.toFixed(2)}, podstawa ${b.base.toFixed(1)} m. `+
+      `Średni zysk 5–15° w kierunku ${tgt}° po stratach w kablu${p0.mb&&p0.match==='eatu'?' i eATU':''}: ${fmtS(b.g)} dBi, obecny układ ${fmtS(gCur)} dBi (${fmt(b.g-gCur)} dB)`+(curFits?(apply?'. ':', więc obecny układ jest lepszy i zostaje. Przycisk „ustaw ten układ” wstawi znaleziony mimo to. '):', ale obecny układ nie mieści się w działce. ')+
+      (perFeed.length>1?'Najlepsze dla każdego zasilania: '+perFeed.map(c=>`${FEEDNAME[c.feed]} ${fmtS(c.g)} dBi (dół ${c.bottom.toFixed(1)} m, ${c.orient}°, SWR ${c.swr.toFixed(1)})`).join('; ')+'. ':'')+
+      (noFit?`Obroty, przy których narożniki wychodzą poza działkę (pominięte): ${Math.floor(100*noFit/tried)} %. `:'')+
+      'Liczone bez pozostałych anten i metalu; pełny wynik z nimi widać na wykresach.';
+    state.sel=tgt;$('selAz').value=tgt;
+    await recompute();
+  }catch(e){hint.classList.add('err');hint.textContent='Błąd optymalizacji: '+e.message;}
+  finally{if(my===optRun)$('dOptGo').disabled=false;}
+}
+// ---- receive noise: ITU-R P.372 man-made + galactic, scaled by the antenna's mean gain vs a short monopole on perfect ground, optional low-angle part from nearby houses
+const plN=(n,a,b,c)=>n===1?a:(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?b:c;
+const NOISE_ENV={city:{c:76.8,d:27.7,s:0.5,n:'miasto'},res:{c:72.5,d:27.7,s:0.5,n:'osiedle domów'},rural:{c:67.2,d:27.7,s:0.3,n:'wieś'},quiet:{c:53.6,d:28.6,s:0,n:'cicha wieś'}};
+function noiseModel(R,f){const E=NOISE_ENV[state.noise.env],lg=Math.log10(f),Fam=E.c-E.d*lg,Fgal=52-23*lg,Fa=10*Math.log10(Math.pow(10,Fam/10)+Math.pow(10,Fgal/10));
+  let sw=0,sg=0;R.G.forEach(row=>row.forEach((g,j)=>{const w=Math.cos(R.EL[j]*RAD);sw+=w;sg+=w*Math.pow(10,g/10);}));const avg=sg/sw;
+  const o=antPos(state.tab,P[state.tab])||[0,0],H=[];
+  if(state.noise.houses&&E.s>0)for(const b of BLD){if(b.t==='plot')continue;const cx=b.poly.reduce((a,q)=>a+q[0],0)/b.poly.length-o[0],cy=b.poly.reduce((a,q)=>a+q[1],0)/b.poly.length-o[1],d=Math.hypot(cx,cy);
+    if(d<=100&&d>=3)H.push({az:(Math.atan2(cx,cy)/RAD+360)%360,w:(b.t==='rod'?0.3:1)/(d*d),d,rod:b.t==='rod'});}
+  let gdir=0;if(H.length){const W=H.reduce((a,h)=>a+h.w,0);for(const h of H){let m=0;for(let el=1;el<=10;el++)m+=Math.pow(10,gAt(R,h.az,el)/10);gdir+=h.w/W*m/10;}}
+  const share=H.length?E.s:0, next=Math.pow(10,Fa/10)*((1-share)*avg/2+share*gdir/3), nf=state.noise.nf, ntot=10*Math.log10(next+Math.pow(10,nf/10));
+  const lam=299.8/f, snr=(g)=>(-120+20*Math.log10(lam)+g-10*Math.log10(480*Math.PI*Math.PI))-(-204+10*Math.log10(2500)+ntot);
+  return {Fa,avgDb:10*Math.log10(avg),nextDb:10*Math.log10(next),ntot,nf,houses:H.length,rods:H.filter(h=>h.rod).length,near:H.length?Math.min(...H.map(h=>h.d)):null,share,env:E.n,
+    rdf:(az,el)=>gAt(R,az,el)-10*Math.log10(avg),snr:(az,el)=>snr(gAt(R,az,el))};}
 const cdiv=(k,Z)=>{const d=Z.R*Z.R+Z.X*Z.X;return {R:k*Z.R/d,X:-k*Z.X/d};};
 // Cubex manual, Table I: λ/4 of 75 Ω RG-11 (VF 0.66) on 10/12/15 m, 50 Ω directly on 17/20 m
 const QSTUB={'10':172.72,'12':202.74,'15':233.68};
@@ -1257,10 +1395,10 @@ let recId=0, NECR=null, NBR=null, RNB=null;
 async function recompute(){
   const my=++recId, t=state.tab, p=P[t], o={f:p.f,ground:state.ground};
   NECR=null;
-  if((state.engine==='nec'||t==='hex'||t==='quad')&&NEC.ok){
+  if((state.engine==='nec'||t==='hex'||t==='quad'||t==='hdelta'||(t==='delta'&&p.mb))&&NEC.ok){
     document.body.classList.add('busy');$('necHint').textContent='Liczę NEC-2…'+(t==='quad'&&p.multi?' Quad z pętlami wszystkich pasm liczy się dłużej, zwykle kilka do kilkunastu sekund.':'');
     NBR=null;
-    const pc={...p,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r};
+    const pc={...p,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r};if(t==='hdelta')pc.corners=hdCorners();if(t==='delta'&&p.mb)pc.balun=4;
     const mx=metalExtra(t,p);
     try{NECR=await necAnalyze(t,pc,wireRadius(),GROUNDS[state.ground],mx);
       const nbs=nbList(t);
@@ -1272,13 +1410,14 @@ async function recompute(){
     document.body.classList.remove('busy');
   }
   if(NECR){
-    const beam=beamOf(t), vf=(t==='delta'||t==='dipole')?wireVF(p.f):1, inf=NECR.info;
+    const beam=beamOf(t), vf=t==='delta'?dVF(p):t==='dipole'?wireVF(p.f):1, inf=NECR.info;
     const lamT=299.8/p.f, ant={segs:reduceSegs(rotateSegs(NECR.segs,beam),lamT),zc:NECR.zc,lossDb:p.lossDb||0,nec:true,...inf};
     if(inf.kind==='delta')Object.assign(ant,{Pbare:inf.Pe,vf,P:inf.Pe*vf});
     if(inf.kind==='dipole')Object.assign(ant,{Lbare:inf.Le,vf,Lphys:inf.Le*vf});
-    const atuPre=(t==='dipole'&&p.feedSys==='atu')?lNetwork(NECR.Z,p.f,50,P.eatu.QL):null;
+    const balR=(t==='hdelta'||(t==='delta'&&p.mb))?4:t==='delta'?(p.balun||1):1, useAtu=(t==='dipole'&&p.feedSys==='atu')||((t==='hdelta'||(t==='delta'&&p.mb))&&p.match==='eatu');
+    const atuPre=useAtu?lNetwork({R:NECR.Z.R/balR,X:NECR.Z.X/balR},p.f,50,P.eatu.QL):null;
     NECR.stub=t==='quad'?quadStub(p):null; NECR.Zm=NECR.stub?cdiv(75*75,NECR.Z):null;
-    {const Z=NECR.Zm||NECR.Z, Zr=t==='delta'?50*(p.balun||1):50, gam=atuPre?0:Math.hypot(Z.R-Zr,Z.X)/Math.hypot(Z.R+Zr,Z.X);
+    {const Z=NECR.Zm||NECR.Z, Zr=50*balR, gam=atuPre?0:Math.hypot(Z.R-Zr,Z.X)/Math.hypot(Z.R+Zr,Z.X);
      NECR.coax=coaxLoss(state.coax.type,p.f,state.coax.len,Math.min(0.999,gam));}
     const TT=terrainWithBuildings();
     const St=compute(ant,o,TT,false), Sf=compute(ant,o,TT,true), loss=(p.lossDb||0)+(atuPre?atuPre.lossDb:0)+NECR.coax.TL;
@@ -1288,9 +1427,9 @@ async function recompute(){
     RNB=null;
     if(NBR&&NBR.base){const B=NBR.base, bs=reduceSegs(rotateSegs(B.segs,beam),lamT), Sb=compute({...ant,segs:bs,zc:B.zc},o,TT,false), Sbf=compute({...ant,segs:bs,zc:B.zc},o,TT,true);
       RNB={AZ:St.AZ,EL:St.EL,G:St.AZ.map((az,i)=>St.EL.map((el,j)=>Math.max(-60,necGain(B,az-beam,el)-loss+Math.max(-30,Math.min(12,Sb.G[i][j]-Sbf.G[i][j])))))};}
-    const Z=NECR.Zm||NECR.Z, Zref=t==='delta'?50*(p.balun||1):50, rho=Math.hypot(Z.R-Zref,Z.X)/Math.hypot(Z.R+Zref,Z.X);
+    const Z=NECR.Zm||NECR.Z, Zref=50*balR, rho=Math.hypot(Z.R-Zref,Z.X)/Math.hypot(Z.R+Zref,Z.X);
     NECR.zref=Zref; NECR.swr=(1+rho)/(1-rho); NECR.atu=null;
-    if(t==='dipole'&&p.feedSys==='atu'){NECR.atu=lNetwork(Z,p.f,50,P.eatu.QL);NECR.swrAnt=NECR.swr;NECR.swr=NECR.atu?1.0:NECR.swr;}
+    if(useAtu){NECR.atu=atuPre;NECR.swrAnt=NECR.swr;NECR.swr=NECR.atu?1.0:NECR.swr;}
     FSP=null;
     if(DIRK.includes(inf.kind)){let best={g:-99,el:10};for(let el=1;el<=60;el++){const g=necGain(NECR,0,el);if(g>best.g)best={g,el};}
       let back=-99;for(let a=120;a<=240;a+=5)back=Math.max(back,necGain(NECR,a,best.el));FSP={D:best.g-loss,FR:best.g-back,el:best.el,nec:true};}
@@ -1315,7 +1454,7 @@ function fmt(v,d=1){if(Math.abs(v)<0.5*Math.pow(10,-d))return (0).toFixed(d);ret
 function fmtS(v,d=1){if(Math.abs(v)<0.5*Math.pow(10,-d))return (0).toFixed(d);return (v<0?'−':'')+Math.abs(v).toFixed(d);}
 function draw(){
   const g=RT.geo, t=state.tab, p=P[t];
-  $('h1t').textContent=TABNAME[t]; $('eyebrow').textContent='Symulacja anteny na działce · '+(t==='delta'||t==='dipole'?(bandName(p.f)+', rezonans '+p.f.toFixed(3)+' MHz'):t==='y15'?'15 m, '+p.design.replace('el',' el.'):t==='a3s'?p.band+' m, 3 el. z trapami':t==='hex'?p.band+' m, G3TXQ / SP7IDX':t==='quad'?p.band+' m, quad 3 el.':'10 m, 5 el.');
+  $('h1t').textContent=TABNAME[t]; $('eyebrow').textContent='Symulacja anteny na działce · '+(t==='delta'&&p.mb?(bandName(p.f)+', pętla na '+bandName(p.fDesign)+' z tunerem'):t==='hdelta'?(bandName(p.f)+', '+p.f.toFixed(3)+' MHz, z tunerem'):t==='delta'||t==='dipole'?(bandName(p.f)+', rezonans '+p.f.toFixed(3)+' MHz'):t==='y15'?'15 m, '+p.design.replace('el',' el.'):t==='a3s'?p.band+' m, 3 el. z trapami':t==='hex'?p.band+' m, G3TXQ / SP7IDX':t==='quad'?p.band+' m, quad 3 el.':'10 m, 5 el.');
   if(state.view==='masts')mastHeader();
   if(document.activeElement!==$('selAz'))$('selAz').value=state.sel;
   $('elO').textContent=state.el+'°';
@@ -1324,7 +1463,7 @@ function draw(){
   let geoHtml='', note='';
   for(const [pre,tb,seg] of [['d','delta','band'],['p','dipole','pBand']]){if(document.activeElement!==$(pre+'Freq'))$(pre+'Freq').value=P[tb].f.toFixed(3);
     [...$(seg).children].forEach(x=>x.setAttribute('aria-pressed',Math.abs(parseFloat(x.dataset.v)-P[tb].f)<1e-6));}
-  {const hm=Math.max(...BLD.map(b=>b.H));$('bldHint').textContent=BLD.length+' budynków w promieniu 500 m, wysokości pomierzone (LoD1 2024, do '+hm.toFixed(0)+' m). Budynki są liczone jako przeszkody (dyfrakcja) dalej niż 1 λ od anteny, nie jako powierzchnia odbijająca.';}
+  {const nL=BLD.filter(b=>b.t==='lod1').length,nR=BLD.filter(b=>b.t==='rod').length,hm=Math.max(...BLD.filter(b=>b.t==='lod1').map(b=>b.H));$('bldHint').textContent=nL+' budynków w promieniu 500 m, wysokości pomierzone (LoD1 2024, do '+hm.toFixed(0)+' m)'+(nR?`, oraz ${nR} ${plN(nR,'altana lub szopa','altany i szopy','altan i szop')} na sąsiednich działkach ROD w promieniu 100 m, odczytanych z ortofotomapy GUGiK (wysokość szacowana 2,2–4 m)`:'')+'. Budynki są liczone jako przeszkody (dyfrakcja) dalej niż 1 λ od anteny, nie jako powierzchnia odbijająca.';}
   $('mastBox').hidden=!(SITECFG.masts&&SITECFG.masts.length);
   if(SITECFG.masts){const sel=$('mastSel'),cur=(mastFor(t,p)||{}).id||'';
     const me=antKey(t,p);
@@ -1332,7 +1471,7 @@ function draw(){
       return `<option value="${m.id}"${blocked?' disabled':''}>${m.id} (${mastLabel(m).split(': ')[1]||'wolny'})${blocked?' – zajęty':''}</option>`;}).join('');sel.value=cur;
     $('mastHint').textContent=(state.mastMsg?state.mastMsg+' ':'')+(ANTNAME[me]||TABNAME[t])+(cur?' stoi na maszcie '+cur+'. Od masztu liczone są odległości do pozostałych anten i do metalowych obiektów.':' nie ma przypisanego masztu, więc liczę ją ze środka działki.')+' Zajęte maszty zwolnisz w zakładce „Maszty”.';}
   $('metalBox').hidden=!SITECFG.metal;
-  if(SITECFG.metal){const m=mastFor(t,p);$('metalHint').textContent=!m?'Ta antena nie ma przypisanego masztu, więc metalowe obiekty są pomijane. Wybierz maszt powyżej.':state.metal?(NECR&&NECR.metalSkipped?'Antena przechodzi zbyt blisko domku lub garażu (poniżej 0,3 m), więc metalowe obiekty są pominięte. Zmień maszt, wysokość albo kierunek.':'Domek (ok. 3 m) i garaż blaszany (2,15 m) jako metalowe siatki w NEC, odległość od '+m.id+' wg planu.')+' Altana jest drewniana, więc jej nie liczę.':'Wyłączone.';}
+  if(SITECFG.metal){const m=mastFor(t,p)||(t==='hdelta'?{id:'narożników pętli'}:t==='dipole'?{id:'środka dipola'}:null);$('metalHint').textContent=!m?'Ta antena nie ma przypisanego masztu, więc metalowe obiekty są pomijane. Wybierz maszt powyżej.':state.metal?(NECR&&NECR.metalSkipped?'Antena przechodzi zbyt blisko domku lub garażu (poniżej 0,3 m), więc metalowe obiekty są pominięte. Zmień maszt, wysokość albo kierunek.':'Domek (ok. 3 m) i garaż blaszany (2,15 m) jako metalowe siatki w NEC, odległość od '+m.id+' wg planu.')+' Altana jest drewniana, więc jej nie liczę.':'Wyłączone.';}
   $('coaxLenO').textContent=state.coax.len+' m';
   $('coaxHint').textContent='Tłumienie '+COAX[state.coax.type].src+'. Wykresy uwzględniają straty w kablu (także od niedopasowania). W wariantach dipola bez baluna długość kabla to też długość ekranu, po którym płynie prąd wspólny.';
   $('wireBox').hidden=!(t==='delta'||t==='dipole');
@@ -1364,15 +1503,28 @@ function draw(){
       'Współczynnik liczony z geometrii izolacji dla '+p.f.toFixed(3)+' MHz. Producent go nie podaje. Zostaw 3–5% zapasu i dotnij analizatorem.';}
   if(t==='delta'){
     [...$('dBalun').children].forEach(x=>x.setAttribute('aria-pressed',+x.dataset.v===p.balun));
+    [...$('dMode').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===(p.mb?'mb':'mono')));$('dMB').hidden=!p.mb;$('dMono').hidden=!!p.mb;$('dBalunBox').hidden=!!p.mb;
+    if(p.mb){[...$('dLoop').children].forEach(x=>x.setAttribute('aria-pressed',+x.dataset.v===p.fDesign));[...$('dOp').children].forEach(x=>{x.disabled=+x.dataset.v<p.fDesign*0.95;x.setAttribute('aria-pressed',Math.abs(+x.dataset.v-p.f)<1e-6);});
+      [...$('dMatch').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.match));
+      const nw=p.f/p.fDesign;$('dMBHint').textContent=`Pętla ma obwód ok. ${g.P.toFixed(1)} m, czyli pełną falę na ${p.fDesign.toFixed(1)} MHz. Na ${bandName(p.f)} jest to ok. ${nw.toFixed(1)} λ obwodu: impedancja odbiega od 50–200 Ω, a charakterystyka ma więcej listków. Dopasowuje tuner; strona liczy straty w kablu przy tym SWR albo w eATU.`;}
     $('apexO').textContent=p.apex.toFixed(1)+' m';$('bottomO').textContent=p.bottom.toFixed(1)+' m';
     $('orientO').textContent=p.orient+'° / '+(p.orient+180)+'°';$('orient').value=p.orient;syncAz('d');
     const b1=(p.orient+90)%360,b2=(p.orient+270)%360;
     $('orientHint').textContent='Dolny drut w linii '+p.orient+'°–'+(p.orient+180)+'°. Wiązki na '+Math.min(b1,b2)+'° i '+Math.max(b1,b2)+'°.';
     const tilt=Math.atan(g.h/(g.b/2))*180/Math.PI;
-    geoHtml=`<span>rezonans</span><b>${p.f.toFixed(3)} MHz</b><span>${g.nec?'obwód el. (NEC, X=0)':'goły drut (306/f)'}</span><b>${g.Pbare.toFixed(2)} m</b><span>skrócenie izolacji</span><b>× ${g.vf.toFixed(3)}</b><span>obwód do cięcia</span><b>${g.P.toFixed(2)} m</b><span>podstawa</span><b>${(g.b*g.vf).toFixed(2)} m</b><span>ramię ×2</span><b>${(g.s*g.vf).toFixed(2)} m</b><span>wierzchołek</span><b>${g.apex.toFixed(1)} m</b><span>kąt ramion</span><b>${tilt.toFixed(0)}°</b>`+
+    geoHtml=(p.mb?`<span>pasmo pracy</span><b>${bandName(p.f)} · ${p.f.toFixed(3)} MHz</b><span>pętla na</span><b>${bandName(p.fDesign)} · rezonans ${p.fDesign.toFixed(3)} MHz</b>`:`<span>rezonans</span><b>${p.f.toFixed(3)} MHz</b>`)+`<span>${g.nec?'obwód el. (NEC, X=0'+(p.mb?' na '+p.fDesign.toFixed(2)+' MHz':'')+')':'goły drut (306/f)'}</span><b>${g.Pbare.toFixed(2)} m</b><span>skrócenie izolacji</span><b>× ${g.vf.toFixed(3)}</b><span>obwód do cięcia</span><b>${g.P.toFixed(2)} m</b><span>podstawa</span><b>${(g.b*g.vf).toFixed(2)} m</b><span>ramię ×2</span><b>${(g.s*g.vf).toFixed(2)} m</b><span>wierzchołek</span><b>${g.apex.toFixed(1)} m</b><span>kąt ramion</span><b>${tilt.toFixed(0)}°</b>`+
       (g.bottom<p.bottom-0.01?`<span style="grid-column:1/3;color:var(--warn)">Dolny drut obniżony do ${g.bottom.toFixed(1)} m, bo musi być poniżej wierzchołka.</span>`:'')+
       (p.apex-p.bottom>g.h+0.05?`<span style="grid-column:1/3;color:var(--warn)">Pętla jest już równoboczna. Wyżej nie ma czego podnosić.</span>`:'');
     note='Pionowo spolaryzowana delta promieniuje dwukierunkowo, prostopadle do płaszczyzny drutu. Suwak ustawia linię dolnego drutu, pole „wiązka główna” obraca pętlę co 1°.';
+  } else if(t==='hdelta'){
+    [...$('hdOp').children].forEach(x=>x.setAttribute('aria-pressed',Math.abs(+x.dataset.v-p.f)<1e-6));[...$('hdFeed').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.feedPos));[...$('hdMatch').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.match));
+    if(!$('hdCorners').contains(document.activeElement))renderHdCorners();
+    const C=hdCorners(),sd=[0,1,2].map(i=>{const a=C[i],b=C[(i+1)%3];return Math.hypot(b.e-a.e,b.n-a.n,b.h-a.h);}),Pm=sd[0]+sd[1]+sd[2],Pg=SITECFG.parcel;
+    const out=Pg?C.map((c,i)=>inPoly([c.e,c.n],Pg)?null:i+1).filter(Boolean):[];
+    $('hdHint').textContent=`Obwód ${Pm.toFixed(1)} m, czyli pełna fala przy ok. ${(306/Pm).toFixed(2)} MHz. Na ${bandName(p.f)} to ${(Pm*p.f/299.8).toFixed(2)} λ obwodu.`+(out.length?` Narożnik ${out.join(' i ')} poza działką.`:'')+(Pm*p.f/299.8<0.9?' Pętla krótsza niż pełna fala na tym paśmie: niska rezystancja, większe straty w tunerze i w kablu.':'');
+    $('hdHint').classList.toggle('err',!!out.length);
+    geoHtml=`<span>pasmo pracy</span><b>${bandName(p.f)} · ${p.f.toFixed(3)} MHz</b><span>obwód</span><b>${Pm.toFixed(2)} m · ${(Pm*p.f/299.8).toFixed(2)} λ</b><span>boki 1–2 · 2–3 · 3–1</span><b>${sd.map(v=>v.toFixed(1)).join(' · ')} m</b><span>pełna fala przy</span><b>${(306/Pm).toFixed(2)} MHz</b><span>wysokości narożników</span><b>${C.map(c=>c.h.toFixed(1)).join(' · ')} m</b><span>średnia wysokość w λ</span><b>${(g.height/lam).toFixed(2)} λ</b>`;
+    note='Pozioma delta ma polaryzację poziomą. Na paśmie, na którym ma pełną falę obwodu, przy małej wysokości promieniuje głównie w górę (NVIS), dobra na bliską Europę. Na wyższych pasmach pętla jest elektrycznie większa, listki schodzą niżej i robi się ich więcej. Dopasowanie zapewnia tuner, a przy dużym SWR na kablu rosną straty, dlatego eATU przy antenie zwykle wypada lepiej. NEC liczy gołe druty bez zwisu; izolacja nieco wydłuża pętlę elektrycznie.';
   } else if(t==='dipole'){
     $('pFeedHint').textContent=p.feedSys==='balun11'?'Balun prądowy 1:1 w punkcie zasilania: ekran kabla nie promieniuje.':p.feedSys==='atu'?'eATU przy antenie dopasowuje impedancję, SWR na kablu ≈ 1. Bez baluna ekran kabla (model: 15 m w dół i po ziemi, za anteną) niesie prąd wspólny i promieniuje.':'Kabel 50 Ω wprost do dipola. Ekran kabla (model: 15 m w dół i po ziemi, za anteną) niesie prąd wspólny i promieniuje.';
     [...$('pFeedSys').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.feedSys));
@@ -1416,12 +1568,14 @@ function draw(){
   }
   if(NECR&&NECR.fs){const fg=(DIRK.includes(g.kind)?NECR.fs.fwd:NECR.fs.max)-(p.lossDb||0);geoHtml+=`<span>zysk katalogowy (wolna przestrzeń)</span><b>${fg.toFixed(2)} dBi · ${(fg-2.15).toFixed(2)} dBd</b>`;}
   if(NECR){const Z=NECR.Z;const cx=NECR.coax;geoHtml+=`<span>impedancja (NEC)</span><b>${Z.R.toFixed(1)} ${Z.X<0?'−':'+'} j${Math.abs(Z.X).toFixed(1)} Ω</b>${NECR.Zm?`<span>za λ/4 RG-11 (${NECR.stub.cm.toFixed(0)} cm)</span><b>${NECR.Zm.R.toFixed(1)} ${NECR.Zm.X<0?'−':'+'} j${Math.abs(NECR.Zm.X).toFixed(1)} Ω</b>`:''}${NECR.atu?`<span>SWR na kablu (po eATU)</span><b>≈ 1.0</b><span>eATU: L szeregowa</span><b>${NECR.atu.L.toFixed(2)} µH</b><span>eATU: C równoległa (${NECR.atu.side==='antenna'?'od strony anteny':'od strony TRX'})</span><b>${NECR.atu.C.toFixed(0)} pF</b><span>straty w eATU (Q cewki ${P.eatu.QL})</span><b>${NECR.atu.lossDb.toFixed(2)} dB</b>`:`<span>SWR przy ${NECR.zref} Ω${NECR.zref!==50?' (za balunem '+(NECR.zref/50)+':1 → 50 Ω)':''}</span><b>${NECR.swr.toFixed(2)}</b>`}`+(NECR.pat.eff?`<span>sprawność (straty w gruncie)</span><b>${(NECR.pat.eff*100).toFixed(0)} % · ${(10*Math.log10(NECR.pat.eff)).toFixed(1)} dB</b>`:'')+(cx?`<span>${cx.name} ${state.coax.len} m: tłumienie</span><b>${cx.ML.toFixed(2)} dB</b><span>straty kabla z niedopasowaniem</span><b>${cx.TL.toFixed(2)} dB</b><span>SWR przy radiu</span><b>${cx.swrIn.toFixed(2)}</b>`:'');}
-  {const low=g.kind==='delta'||g.kind==='quad'?g.bottom:g.kind==='dipole'?g.endH:g.height, hl=(g.kind==='delta'?(g.bottom+g.apex)/2:g.height)/lam;
+  {const low=g.kind==='delta'||g.kind==='quad'||g.kind==='hdelta'?g.bottom:g.kind==='dipole'?g.endH:g.height, hl=(g.kind==='delta'?(g.bottom+g.apex)/2:g.height)/lam;
    if(low<2.5||hl<0.1)geoHtml+=g.nec?`<span style="grid-column:1/3;color:var(--warn)">Antena bardzo nisko (${hl.toFixed(2)} λ). NEC-2 liczy straty w gruncie, ale poprawka od nierówności terenu jest przy takiej wysokości niepewna.</span>`:`<span style="grid-column:1/3;color:var(--warn)">Antena bardzo nisko (${hl.toFixed(2)} λ). Szybki model nie liczy strat w gruncie, więc zysk jest wyraźnie zawyżony. Przełącz na NEC-2.</span>`;}
   $('geo').innerHTML=geoHtml; $('antNote').textContent=note;
   drawSketch();
   const st=stats(RT), sf=stats(RF);
   const selT=gAt(RT,state.sel,state.el), selF=gAt(RF,state.sel,state.el);
+  const NZ=noiseModel(RT,p.f); state.NZ=NZ;
+  $('noiseHint').textContent=`Szum zewnętrzny (ITU, ${NZ.env}) na ${p.f.toFixed(2)} MHz: ${NZ.Fa.toFixed(0)} dB ponad kT₀. Ta antena odbiera go ${(NZ.nextDb-NZ.nf).toFixed(0)} dB ponad szumy radia`+(NZ.nextDb-NZ.nf>10?', więc to szum z zewnątrz ogranicza odbiór, a nie czułość anteny.':NZ.nextDb-NZ.nf>0?', więc straty anteny już trochę pogarszają SNR.':': szumy radia przeważają, więc straty anteny i kabla bezpośrednio obniżają SNR.')+(NZ.houses?` Kierunkowo: ${NZ.houses} ${plN(NZ.houses,'budynek','budynki','budynków')} w promieniu 100 m${NZ.rods?`, w tym ${NZ.rods} ${plN(NZ.rods,'altana','altany','altan')} ROD z wagą 0,3`:''} (najbliższy ${NZ.near.toFixed(0)} m).`:(state.noise.houses&&NOISE_ENV[state.noise.env].s>0?' Brak domów w promieniu 100 m.':''));
   $('kpis').innerHTML=[
     ['Maksimum', fmtS(st.best.g)+' dBi', `az ${st.best.az}°, elewacja ${st.best.el}°`],
     ['Moc do nieba poniżej 20°', (st.low*100).toFixed(0)+' %', `nad płaskim gruntem ${(sf.low*100).toFixed(0)} %`],
@@ -1430,6 +1584,7 @@ function draw(){
    .concat(RNB?[[HAS_MASTS?'Wpływ pozostałych anten':'Wpływ drugiej anteny',fmt(gAt(RT,beamOf(t),state.el)-gAt(RNB,beamOf(t),state.el))+' dB',`wiązka ${beamOf(t)}° przy ${state.el}°, najgorzej ${fmt(Math.min(...[5,10,15,20].map(e=>gAt(RT,beamOf(t),e)-gAt(RNB,beamOf(t),e))))} dB (5–20°)`]]:[])
    .concat(NECR&&NECR.coax?[['Straty w kablu',fmtS(-NECR.coax.TL,2)+' dB',`${NECR.coax.name}, ${state.coax.len} m, SWR przy radiu ${NECR.coax.swrIn.toFixed(2)}`]]:[])
    .concat(NECR&&NECR.pat.eff?[['Straty w gruncie', fmtS(10*Math.log10(NECR.pat.eff))+' dB', `sprawność ${(NECR.pat.eff*100).toFixed(0)} %, ${NECR.atu?'eATU: SWR ≈ 1, straty '+NECR.atu.lossDb.toFixed(2)+' dB':'SWR '+NECR.swr.toFixed(2)+(NECR.zref!==50?' (balun '+(NECR.zref/50)+':1)':' (50 Ω)')}`]]:[])
+   .concat([['Odbiór: RDF',fmt(NZ.rdf(state.sel,state.el))+' dB',`${state.sel}° przy ${state.el}°, średni zysk ${fmtS(NZ.avgDb)} dBi`],['Odbiór: SNR sygnału 1 µV/m',fmt(NZ.snr(state.sel,state.el))+' dB',`SSB 2,5 kHz, ${NZ.env}; szum z zewnątrz ${fmt(NZ.nextDb-NZ.nf,0)} dB ponad szumy radia`]])
    .concat(FSP?[['Przód / tył (F/R)', FSP.FR.toFixed(0)+' dB', FSP.nec?`przy ${FSP.el}° elewacji, nad gruntem`:`wolna przestrzeń, zysk ${FSP.D.toFixed(1)} dBi`]]:[]).map(k=>`<div class="kpi"><div class="t">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
   document.querySelectorAll('.nbLeg').forEach(e=>e.hidden=!RNB);
   drawSky(); drawAz(); drawEl(); drawProfile(); drawPlan(); drawTable();
@@ -1449,6 +1604,15 @@ function drawSketch(){
     x.strokeStyle=css('--ref');x.beginPath();x.moveTo(...lerp(P2(120),P2(60),(g.dims.r-R0)/R0));x.lineTo(...P2(120));x.lineTo(...P2(180));x.lineTo(...P2(240));x.lineTo(...lerp(P2(240),P2(300),(g.dims.r-R0)/R0));x.stroke();
     dot(ox,oy);x.strokeStyle=css('--ink');x.lineWidth=1.5;const t0=P2(0,R0*1.25);x.beginPath();x.moveTo(ox,oy-R0*sc*0.2);x.lineTo(...t0);x.stroke();
     lab(p.beamAz+'°',w-4,12,'right');lab('widok z góry',4,12);
+    return;
+  }
+  if(g.kind==='hdelta'){ // top view
+    const C=g.corners,mnE=Math.min(...C.map(c=>c[0])),mxE=Math.max(...C.map(c=>c[0])),mnN=Math.min(...C.map(c=>c[1])),mxN=Math.max(...C.map(c=>c[1]));
+    const sc=Math.min((w-60)/Math.max(1,mxE-mnE),(h-56)/Math.max(1,mxN-mnN)),X=e=>w/2+(e-(mnE+mxE)/2)*sc,Y=n=>h/2+8-(n-(mnN+mxN)/2)*sc;
+    x.strokeStyle=css('--accent');x.lineWidth=2;x.beginPath();C.forEach((c,i)=>i?x.lineTo(X(c[0]),Y(c[1])):x.moveTo(X(c[0]),Y(c[1])));x.closePath();x.stroke();
+    const src=P.hdelta.corners;C.forEach((c,i)=>{lab(`${i+1}${src[i].src!=='pt'?' '+src[i].src:''} · ${c[2].toFixed(1)} m`,X(c[0])+(X(c[0])>w/2?-4:4),Y(c[1])+(Y(c[1])>h/2?12:-5),X(c[0])>w/2?'right':'left');});
+    const fp=P.hdelta.feedPos==='side'?[(C[0][0]+C[1][0])/2,(C[0][1]+C[1][1])/2]:C[0];dot(X(fp[0]),Y(fp[1]));
+    lab('widok z góry, N ↑',4,12);
     return;
   }
   if(g.kind==='quad'){ // side view: mast, boom, three loops of this band (other bands faint)
@@ -1607,8 +1771,15 @@ function drawPlan(){
   const ray=(az,col,dash,wd)=>{const t=az*Math.PI/180;x.strokeStyle=col;x.setLineDash(dash);x.lineWidth=wd;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Rm*sc*Math.sin(t),cy-Rm*sc*Math.cos(t));x.stroke();x.setLineDash([]);};
   const beam=beamOf(state.tab), am=mastFor(state.tab,P[state.tab]), ap=antPos(state.tab,P[state.tab])||[0,0], ox0=X(ap[0]), oy0=Y(ap[1]);
   const ray2=(az,col,dash,wd)=>{const t=az*Math.PI/180;x.strokeStyle=col;x.setLineDash(dash);x.lineWidth=wd;x.beginPath();x.moveTo(ox0,oy0);x.lineTo(ox0+Rm*sc*Math.sin(t),oy0-Rm*sc*Math.cos(t));x.stroke();x.setLineDash([]);};
-  if(state.tab==='dipole'){ray2(beam,css('--accent'),[7,5],1.6);ray2(beam+180,css('--accent'),[7,5],1.2);}else{ray2(beam,css('--accent'),[],2.5);if(state.tab==='delta')ray2(beam+180,css('--accent'),[],1.2);}
+  if(state.tab==='hdelta'){}else if(state.tab==='dipole'){ray2(beam,css('--accent'),[7,5],1.6);ray2(beam+180,css('--accent'),[7,5],1.2);}else{ray2(beam,css('--accent'),[],2.5);if(state.tab==='delta')ray2(beam+180,css('--accent'),[],1.2);}
   ray(state.sel,css('--warn'),[4,4],1.5);
+  if(state.tab==='hdelta'&&RT.geo.kind==='hdelta'){const C=RT.geo.corners,Pg=SITECFG.parcel;x.strokeStyle=css('--accent');x.lineWidth=3.5;x.lineJoin='round';x.beginPath();C.forEach((c,i)=>i?x.lineTo(X(c[0]),Y(c[1])):x.moveTo(X(c[0]),Y(c[1])));x.closePath();x.stroke();
+    for(const c of C){x.fillStyle=Pg&&!inPoly([c[0],c[1]],Pg)?css('--warn'):css('--accent');x.beginPath();x.arc(X(c[0]),Y(c[1]),4.5,0,7);x.fill();}
+    const fp=P.hdelta.feedPos==='side'?[(C[0][0]+C[1][0])/2,(C[0][1]+C[1][1])/2]:C[0];x.fillStyle=css('--warn');x.beginPath();x.arc(X(fp[0]),Y(fp[1]),5,0,7);x.fill();}
+  if(state.tab==='delta'&&RT.geo.kind==='delta'){const g=RT.geo,o=antPos('delta',P.delta)||[0,0],hb=g.b*(g.vf||1)/2,t=P.delta.orient*RAD,Pg=SITECFG.parcel;x.lineCap='round';
+    const cs=[[o[0]+hb*Math.sin(t),o[1]+hb*Math.cos(t)],[o[0]-hb*Math.sin(t),o[1]-hb*Math.cos(t)]],bad=Pg&&cs.some(q=>!inPoly(q,Pg));
+    x.strokeStyle=bad?css('--warn'):css('--accent');x.lineWidth=4;x.beginPath();x.moveTo(X(cs[0][0]),Y(cs[0][1]));x.lineTo(X(cs[1][0]),Y(cs[1][1]));x.stroke();
+    x.fillStyle=x.strokeStyle;for(const q of cs){x.beginPath();x.arc(X(q[0]),Y(q[1]),4,0,7);x.fill();}x.lineCap='butt';}
   if(state.tab==='dipole'&&RT.geo.kind==='dipole'){const L=dipoleLayout(RT.geo);x.lineCap='round';
     for(const r of L.arms){const bad=SITECFG.parcel&&(!r.inside||r.ray<r.reach);x.strokeStyle=bad?css('--warn'):css('--accent');x.lineWidth=4;x.beginPath();x.moveTo(X(L.o[0]),Y(L.o[1]));x.lineTo(X(r.end[0]),Y(r.end[1]));x.stroke();
       x.fillStyle=x.strokeStyle;x.beginPath();x.arc(X(r.end[0]),Y(r.end[1]),4,0,7);x.fill();
@@ -1619,19 +1790,40 @@ function drawPlan(){
   for(const m of (SITECFG.masts||[])){const on=am&&m.id===am.id;x.fillStyle=on?css('--accent'):css('--bg');x.strokeStyle=on?css('--accent'):css('--warn');x.lineWidth=2;x.beginPath();x.arc(X(m.pos[0]),Y(m.pos[1]),on?6:5,0,7);x.fill();x.stroke();
     x.fillStyle=css('--ink');x.font=(on?'600 ':'')+'11px '+css('--sans');x.textAlign='left';x.fillText(mastLabel(m),X(m.pos[0])+8,Y(m.pos[1])+4);}
   if(!(SITECFG.masts||[]).length){x.fillStyle=css('--ink');x.beginPath();x.arc(cx,cy,4.5,0,7);x.fill();}x.font='600 12px '+css('--sans');x.textAlign='left';if(!(SITECFG.masts||[]).length)x.fillText(SITECFG.parcelLabel||'działka',cx+7,cy-7);
-  const near=BLD.filter(b=>b.t!=='plot').map(b=>{let m=1e9;b.poly.forEach(p=>m=Math.min(m,Math.hypot(p[0],p[1])));return m;}).sort((a,b)=>a-b)[0];
-  $('planLeg').innerHTML=`<span>wysokość budynku: 0 m</span><span class="cbar" style="background:linear-gradient(90deg,${[0.1,0.3,0.5,0.7,0.95].map(v=>'rgb('+cmap(v).map(Math.round).join(',')+')').join(',')})"></span><span>≥ ${hmax} m</span><span>· najbliższy budynek ${near.toFixed(0)} m</span>`;
+  const dmin=t=>BLD.filter(b=>t==='rod'?b.t==='rod':(b.t!=='plot'&&b.t!=='rod')).map(b=>{let m=1e9;b.poly.forEach(p=>m=Math.min(m,Math.hypot(p[0],p[1])));return m;}).sort((a,b)=>a-b)[0];
+  const near=dmin('bld'),nearR=dmin('rod');
+  $('planLeg').innerHTML=`<span>wysokość budynku: 0 m</span><span class="cbar" style="background:linear-gradient(90deg,${[0.1,0.3,0.5,0.7,0.95].map(v=>'rgb('+cmap(v).map(Math.round).join(',')+')').join(',')})"></span><span>≥ ${hmax} m</span><span>· najbliższy budynek ${near.toFixed(0)} m</span>${nearR!=null?`<span>· najbliższa altana ROD ${nearR.toFixed(0)} m</span>`:''}`;
   c._g={cx,cy};
 }
-function antTop(){const g=RT.geo;return g.kind==='delta'?g.apex:g.kind==='quad'?2*g.height-g.bottomAll:g.height;}
+function renderHdCorners(){const ms=SITECFG.masts||[],C=P.hdelta.corners,R=hdCorners();
+  $('hdCorners').innerHTML='<div class="hdc"><span></span><span>punkt</span><span>E, m</span><span>N, m</span><span>h, m</span></div>'+C.map((c,i)=>`<div class="hdc" data-i="${i}"><b style="color:var(--ink)">${i+1}</b><select data-f="src" aria-label="Narożnik ${i+1}">${ms.map(m=>`<option value="${m.id}"${c.src===m.id?' selected':''}>${m.id}</option>`).join('')}<option value="pt"${c.src==='pt'?' selected':''}>punkt</option></select>`+
+    ['e','n','h'].map(k=>`<input type="number" data-f="${k}" step="0.5" aria-label="Narożnik ${i+1} ${k}" value="${R[i][k].toFixed(1)}"${k!=='h'&&c.src!=='pt'?' disabled':''}>`).join('')+'</div>').join('');}
+function antTop(){const g=RT.geo;if(g.kind==='hdelta')return Math.max(...g.corners.map(c=>c[2]));return g.kind==='delta'?g.apex:g.kind==='quad'?2*g.height-g.bottomAll:g.height;}
 function drawTable(){
   $('dx').innerHTML=DX.map(([n,a])=>{const g5=gAt(RT,a,5),g10=gAt(RT,a,10),g20=gAt(RT,a,20),d=g10-gAt(RF,a,10);
-    return `<tr data-az="${a}" class="${a===state.sel?'sel':''}" tabindex="0"><td>${n}</td><td>${a}°</td><td>${fmtS(g5)}</td><td>${fmtS(g10)}</td><td>${fmtS(g20)}</td><td><span class="pill ${d>=0.5?'up':d<=-0.5?'down':''}">${fmt(d)} dB</span></td></tr>`}).join('');
+    return `<tr data-az="${a}" class="${a===state.sel?'sel':''}" tabindex="0"><td>${n}</td><td>${a}°</td><td>${fmtS(g5)}</td><td>${fmtS(g10)}</td><td>${fmtS(g20)}</td><td><span class="pill ${d>=0.5?'up':d<=-0.5?'down':''}">${fmt(d)} dB</span></td><td>${fmt(state.NZ.rdf(a,10))}</td><td>${fmt(state.NZ.snr(a,10))} dB</td></tr>`}).join('');
 }
 // ---- controls
 let tmr=null;const deb=()=>{clearTimeout(tmr);tmr=setTimeout(recompute,state.engine==='nec'?180:60);};
 function segInit(id,tab,key){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...$(id).children].forEach(x=>x.setAttribute('aria-pressed',x===b));P[tab][key]=key==='f'?parseFloat(b.dataset.v):b.dataset.v;recompute();});}
 segInit('band','delta','f');
+{const sel=$('dOptTgt');sel.innerHTML='<option value="">własny azymut</option>'+DX.map(([n,a])=>`<option value="${a}">${n} · ${a}°</option>`).join('');sel.value=String(DX[0][1]);$('dOptAz').value=DX[0][1];
+  sel.addEventListener('change',()=>{if(sel.value!=='')$('dOptAz').value=sel.value;});
+  $('dOptAz').addEventListener('change',()=>{const v=norm(+$('dOptAz').value||0);$('dOptAz').value=v;const m=[...sel.options].find(x=>x.value===String(v));sel.value=m?m.value:'';});
+  $('dOptApply').addEventListener('click',()=>{if(!optBest)return;Object.assign(P.delta,{bottom:optBest.bottom,feed:optBest.feed,orient:optBest.orient,balun:optBest.balun});$('dOptApply').hidden=true;recompute();});
+  $('dOptGo').addEventListener('click',()=>{if(!NEC.ok){$('dOptHint').textContent='Silnik NEC-2 jeszcze się ładuje albo jest niedostępny.';return;}optimizeDelta();});}
+$('dMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const mb=b.dataset.v==='mb',d=P.delta;if(mb===!!d.mb)return;
+  if(mb){d.fMono=d.f;d.mb=true;d.f=d.fDesign<5?3.65:7.1;}else{d.mb=false;d.f=d.fMono||7.1;}state.sel=beamOf('delta');recompute();});
+$('dLoop').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=P.delta;d.fDesign=+b.dataset.v;if(d.f<d.fDesign*0.95)d.f=d.fDesign<5?3.65:7.1;recompute();});
+$('dOp').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;P.delta.f=+b.dataset.v;recompute();});
+$('dMatch').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.delta.match=b.dataset.v;recompute();});
+$('hdOp').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.hdelta.f=+b.dataset.v;recompute();});
+$('hdFeed').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.hdelta.feedPos=b.dataset.v;recompute();});
+$('hdMatch').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.hdelta.match=b.dataset.v;recompute();});
+$('hdCorners').addEventListener('change',e=>{const el=e.target,row=el.closest('.hdc');if(!row||row.dataset.i==null)return;const i=+row.dataset.i,c=P.hdelta.corners[i],R=hdCorners()[i];
+  if(el.dataset.f==='src'){if(el.value==='pt'){c.e=R.e;c.n=R.n;}c.src=el.value;renderHdCorners();}
+  else{const v=parseFloat(String(el.value).replace(',','.'));if(isNaN(v))return;c[el.dataset.f]=el.dataset.f==='h'?Math.max(1,Math.min(40,v)):Math.max(-150,Math.min(150,v));}
+  recompute();});
 $('dBalun').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.delta.balun=+b.dataset.v;recompute();});
 $('pFeedSys').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.dipole.feedSys=b.dataset.v;recompute();});segInit('feed','delta','feed');segInit('pBand','dipole','f');segInit('pShape','dipole','shape');$('yDesign').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const nd=b.dataset.v,od=P.y15.design;if(nd===od)return;
   P.y15.per[od]={height:P.y15.height,beamAz:P.y15.beamAz};Object.assign(P.y15,{design:nd},P.y15.per[nd]);[...$('yDesign').children].forEach(x=>x.setAttribute('aria-pressed',x===b));state.sel=beamOf('y15');recompute();});
@@ -1704,6 +1896,7 @@ function drawMastPlan(){const c=$('mastPlan');if(!c||state.view!=='masts')return
   x.strokeStyle=css('--grid');x.lineWidth=1;for(let v=-Math.floor(Rm/5)*5;v<=Rm;v+=5){x.beginPath();x.moveTo(X(v),0);x.lineTo(X(v),h);x.stroke();x.beginPath();x.moveTo(0,Y(v));x.lineTo(w,Y(v));x.stroke();}
   // plot structures
   const cen=poly=>[poly.reduce((a,q)=>a+q[0],0)/poly.length,poly.reduce((a,q)=>a+q[1],0)/poly.length];
+  x.fillStyle='rgba(120,120,120,.18)';for(const b of BLD.filter(b=>b.t==='rod')){x.beginPath();b.poly.forEach((q,i)=>i?x.lineTo(X(q[0]),Y(q[1])):x.moveTo(X(q[0]),Y(q[1])));x.closePath();x.fill();}
   const leg=[];
   for(const b of BLD.filter(b=>b.t==='plot')){const cc=cen(b.poly),met=(SITECFG.metal||[]).find(mm=>Math.hypot(...cen(mm.poly).map((v,i)=>v-cc[i]))<1.5);
     const nm=met?met.name.split(' (')[0]:'altana',tag=nm[0].toUpperCase();leg.push(`${tag} – ${nm}, ${met?'metal':'drewno'}, ${b.H.toFixed(2).replace(/0$/,'').replace('.',',')} m`);
@@ -1754,6 +1947,10 @@ $('mastSel').addEventListener('change',e=>{state.fitMsg='';const k=antKey(state.
 $('metalChk').addEventListener('change',e=>{state.metal=e.target.checked;recompute();});
 $('coaxType').addEventListener('change',e=>{state.coax.type=e.target.value;recompute();});
 $('coaxLen').addEventListener('input',e=>{state.coax.len=parseInt(e.target.value);deb();});
+$('noiseEnv').value=state.noise.env;
+$('noiseEnv').addEventListener('change',e=>{state.noise.env=e.target.value;draw();});
+$('noiseNF').addEventListener('change',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){state.noise.nf=Math.max(0,Math.min(30,v));draw();}});
+$('noiseHouses').addEventListener('change',e=>{state.noise.houses=e.target.checked;draw();});
 $('bldChk').addEventListener('change',e=>{state.bld=e.target.checked;recompute();});
 $('ekChk').addEventListener('change',e=>{NEC.ek=e.target.checked;recompute();});
 $('engine').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...$('engine').children].forEach(x=>x.setAttribute('aria-pressed',x===b));state.engine=b.dataset.v;recompute();});
@@ -1772,7 +1969,7 @@ window.addEventListener('resize',()=>{clearTimeout(tmr);tmr=setTimeout(()=>{draw
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);}catch(e){}
 new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 document.querySelectorAll('.tabs button').forEach(b=>{if(b.dataset.tab==='masts'){if(HAS_MASTS)b.hidden=false;else b.remove();return;}if(!SITECFG.tabs.includes(b.dataset.tab))b.remove();});
-document.querySelectorAll('.panel[data-tab]').forEach(p=>{if(!SITECFG.tabs.includes(p.dataset.tab)&&['delta','dipole','y15','y10','a3s','hex','quad'].includes(p.dataset.tab))p.remove();});
+document.querySelectorAll('.panel[data-tab]').forEach(p=>{if(!SITECFG.tabs.includes(p.dataset.tab)&&['delta','hdelta','dipole','y15','y10','a3s','hex','quad'].includes(p.dataset.tab))p.remove();});
 $('coordTxt').textContent=SITECFG.lat.toFixed(4)+'°N '+SITECFG.lon.toFixed(4)+'°E';$('h0Txt').textContent=(SITECFG.callsign?SITECFG.callsign+' · ':'')+'punkt '+SITECFG.h0.toFixed(1).replace('.',',')+' m n.p.m.';
 $('apexHint').textContent=SITECFG.apexHint;$('siteNote').textContent=SITECFG.note;
 {const h=(location.hash||'').slice(1);if(P[h]&&h!=='delta'&&SITECFG.tabs.includes(h)){state.tab=h;}

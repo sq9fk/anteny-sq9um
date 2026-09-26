@@ -42,7 +42,7 @@ function deltaDims(Pe,apex,bottom){
   return {b,s,h,apex:bottom+h,bottom,Pe};
 }
 function necGeomDelta(p,scale,r){
-  const lam=299.8/p.f, d=deltaDims(306/p.f*scale,p.apex,p.bottom);
+  const lam=299.8/p.f, d=deltaDims(306/(p.mb?p.fDesign:p.f)*scale,p.apex,p.bottom);  // mb: loop cut for fDesign, used on p.f
   const A=[0,0,d.apex],R=[d.b/2,0,d.bottom],L=[-d.b/2,0,d.bottom];
   const ns=segCount(d.s,lam,7), nb=segCount(d.b,lam,9)|1;
   const wires=[{a:A,b:R,n:ns,r},{a:R,b:L,n:nb,r},{a:L,b:A,n:ns,r}];
@@ -109,11 +109,12 @@ function wireSegs(wires){const segs=[];
 // ---- analysis: tune to resonance (wire antennas), then pattern over Sommerfeld-Norton ground
 async function necAnalyze(t,p,wireR,ground,extra){
   const gr={er:ground.er,sig:ground.sig};
-  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,gr]);
+  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   let scale=1, tuned=false; const geomOf=s=>necGeom(t,p,s,wireR);
   if(t==='delta'||t==='dipole'||((t==='hex'||t==='quad')&&p.tune)){ // secant search for X=0 at the resonance frequency
-    const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,p.f,gr,['XQ'],ldCards(g.loads)))).X;};
+    const fT=(t==='delta'&&p.mb)?p.fDesign:p.f;  // multiband loop: resonant at its design frequency
+    const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,fT,gr,['XQ'],ldCards(g.loads)))).X;};
     let s0=1,x0=await X(s0),s1=(t==='hex'||t==='quad')?0.98:0.97,x1=await X(s1);
     for(let k=0;k<6&&Math.abs(x1)>1;k++){if(x1===x0)break;const s2=Math.min(1.3,Math.max(0.75,s1-x1*(s1-s0)/(x1-x0)));s0=s1;x0=x1;s1=s2;x1=await X(s1);}
     scale=s1; tuned=true;
@@ -141,7 +142,7 @@ function rotateSegs(segs,beam){const b=beam*Math.PI/180,c=Math.cos(b),s=Math.sin
   const R=v=>[v[0]*c+v[1]*s,-v[0]*s+v[1]*c,v[2]];
   return segs.map(g=>({r:R(g.r),dl:R(g.dl),I:g.I,Ic:g.Ic}));}
 
-function necGeom(t,p,s,r){return t==='delta'?necGeomDelta(p,s,r):t==='dipole'?necGeomDipole(p,s,r):t==='hex'?necGeomHex(p,s):t==='quad'?necGeomQuad(p,s):necGeomYagi(t,p);}
+function necGeom(t,p,s,r){return t==='delta'?necGeomDelta(p,s,r):t==='dipole'?necGeomDipole(p,s,r):t==='hex'?necGeomHex(p,s):t==='quad'?necGeomQuad(p,s):t==='hdelta'?necGeomHDelta({...p,wireR:r}):necGeomYagi(t,p);}
 const ldCards=(L,off=0)=>(L||[]).map(l=>`LD 4 ${l.tag+off} ${l.seg} ${l.seg} ${l.R} 0`);
 function geomRadius(g){let m=0;g.wires.forEach(w=>[w.a,w.b].forEach(v=>m=Math.max(m,Math.hypot(v[0],v[1]))));return m;}
 // Main antenna together with other (passive) antennas nearby. nbs:[{type,p,beam,dist,brg,term,name}] (a single object is accepted too); mainBeam = compass azimuth of main beam.
@@ -150,7 +151,7 @@ async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nbs,extra){
   const gr={er:ground.er,sig:ground.sig};
   const base=await necAnalyze(t,p,wireR,ground,extra);
   const g1=necGeom(t,p,base.scale,wireR);
-  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
+  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   const used=[], skipped=[]; let wires=g1.wires.slice();
   const loads=ldCards(g1.loads);
@@ -266,6 +267,18 @@ function necGeomQuad(p,scale=1){
   return {wires,feed,loads,info:{kind:'quad',height:p.height,band:p.band,lam:299.8/Q.f,dims:Q,side:{r:Q.r*IN,d:Q.d*IN*scale,dir:Q.dir*IN},bottom:zc-Q.r*IN/2,bottomAll:zc-big.r*IN/2,boom:216*IN,multi:!!p.multi}};
 }
 
+// ---- horizontal delta loop: three corners in local metres (E, N, height), fixed geometry, fed at corner 1 or mid side 1–2 (tuner-fed multiband)
+function necGeomHDelta(p){
+  const lam=299.8/p.f, r=p.wireR||0.0005, C=p.corners.map(c=>[c.e,c.n,c.h]), n=L=>Math.max(5,Math.ceil(L/(lam/40)));
+  const len=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);
+  const wires=[];let feed;
+  if(p.feedPos==='side'){const L=len(C[0],C[1]),N=n(L)|1;wires.push({a:C[0],b:C[1],n:N,r});feed={tag:1,seg:(N+1)/2};}
+  else{wires.push({a:C[0],b:C[1],n:n(len(C[0],C[1])),r});feed={tag:3,seg:n(len(C[2],C[0]))};}  // last segment of side 3–1 ends at corner 1
+  wires.push({a:C[1],b:C[2],n:n(len(C[1],C[2])),r},{a:C[2],b:C[0],n:n(len(C[2],C[0])),r});
+  if(p.feedPos!=='side')feed={tag:3,seg:wires[2].n};
+  const sides=[len(C[0],C[1]),len(C[1],C[2]),len(C[2],C[0])], P=sides[0]+sides[1]+sides[2];
+  return {wires,feed,info:{kind:'hdelta',sides,Pe:P,height:(C[0][2]+C[1][2]+C[2][2])/3,bottom:Math.min(C[0][2],C[1][2],C[2][2]),corners:C}};
+}
 // Metal objects (e.g. a steel trailer, a tin garage) as NEC wire grids. poly: 4 corners in the antenna frame [m], z0..z1 height.
 function wireBox(poly,z0,z1,step=1.0,r=0.005){
   const len=i=>{const a=poly[i],b=poly[(i+1)%4];return Math.hypot(b[0]-a[0],b[1]-a[1]);};
@@ -283,7 +296,7 @@ function wireBox(poly,z0,z1,step=1.0,r=0.005){
 
 // "Catalogue" gain: the same antenna alone in free space (no ground, no metal, no neighbour).
 async function necFreeSpace(t,p,wireR,scale){
-  const key=JSON.stringify(['fs',NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,scale]);
+  const key=JSON.stringify(['fs',NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,scale]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   const g=necGeom(t,{...p,feedSys:'balun11'},scale,wireR);  // catalogue gain: the antenna alone, without the coax shield
   const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,{er:1,sig:0},['RP 0 37 72 1000 0 0 5 5'],ldCards(g.loads),true));
