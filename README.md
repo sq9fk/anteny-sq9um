@@ -23,6 +23,7 @@ Siostrzany projekt dla działki SQ9FK w JO90HI: [sq9fk.github.io/anteny-sq9fk](h
 | **Yagi 15 m** | 21,2 MHz | 4 lub 5 elementów, wysokość, azymut co 1° |
 | **Yagi 10 m** | 28,5 MHz | 5 elementów, wysokość, azymut co 1° |
 | **Cushcraft A3S** | 20 / 15 / 10 m | wysokość, azymut co 1° |
+| **Hexbeam** G3TXQ (SP7IDX) | 20 / 17 / 15 / 12 / 10 / 6 m | wysokość, azymut co 1°, opcjonalne dostrojenie drivera do rezonansu |
 
 **Wyniki:**
 
@@ -43,7 +44,7 @@ Siostrzany projekt dla działki SQ9FK w JO90HI: [sq9fk.github.io/anteny-sq9fk](h
 - **Grunt:** słaby, przeciętny albo dobry.
 - **Promień analizy terenu:** 3 km (dane wbudowane) albo 5, 10, 15 lub 20 km (pobierane na żywo z Geoportalu).
 - **Druga antena na działce:** NEC-2 liczy antenę główną razem z sąsiednią i pokazuje, ile dB traci wiązka. Można ustawić odległość, kierunek i to, czy druga antena jest podłączona (50 Ω) czy rozwarta.
-- **Linki do zakładek:** np. `#delta`, `#dipole`, `#y15`, `#y10`, `#a3s`.
+- **Linki do zakładek:** np. `#delta`, `#dipole`, `#y15`, `#y10`, `#a3s`, `#hex`.
 
 ![Charakterystyka pionowa z profilem terenu](docs/przekroj.png)
 
@@ -85,6 +86,7 @@ Numeryczny model terenu (NMT) **GUGiK** jest pobierany usługą `services.gugik.
 - Model nie uwzględnia drzew, masztu i kabla przy antenie z balunem, strat w materiale elementów ani układów dopasowania (hairpin, gamma).
 - NEC-2 nie modeluje izolacji drutu. Uwzględnia ją współczynnik skrócenia liczony z geometrii przewodu, bo producent DX-Wire go nie podaje. Zostaw 3–5% zapasu i dotnij analizatorem.
 - Wymiary Yagi dobrano w NEC-2 dla rurek Ø 20 mm (15 m) i Ø 16 mm (10 m). Przed budową uwzględnij mocowania elementów do boomu.
+- Hexbeam: wymiary 20–10 m z tabeli G3TXQ, 6 m przeskalowane z 10 m. Model liczy jedno pasmo naraz, bez drutów pozostałych pasm, dlatego driver jest domyślnie dostrajany do rezonansu.
 - A3S jest modelowana jako elementy pełnowymiarowe z 0,5 dB strat w trapach. Rozstaw elementów jest przybliżony.
 - Azymuty kierunków DX są orientacyjne.
 
