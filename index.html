@@ -102,6 +102,9 @@ tbody tr{cursor:pointer}
 .chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
 .ctl .chk label{all:unset;cursor:pointer;font-size:14px;color:var(--muted)}
 .chk input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.numg{display:grid;grid-template-columns:auto 78px auto;gap:6px 8px;align-items:center;justify-content:start;font-size:14px;color:var(--muted)}
+.numg input{width:78px;box-sizing:border-box;font:inherit;font-family:var(--mono);font-size:15px;padding:5px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
+.numg input:disabled{opacity:.6}
 .planbtn{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--accent);border-radius:5px;background:var(--accent-soft);color:var(--ink);cursor:pointer;align-self:flex-start}
 .elctl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .elctl input{flex:1}
@@ -124,6 +127,7 @@ tbody tr{cursor:pointer}
     <button type="button" role="tab" id="tab-y10" data-tab="y10" aria-selected="false">Yagi 10 m<small>5 el.</small></button>
     <button type="button" role="tab" id="tab-a3s" data-tab="a3s" aria-selected="false">A3S<small>20 / 15 / 10 m</small></button>
     <button type="button" role="tab" id="tab-hex" data-tab="hex" aria-selected="false">Hexbeam<small>20–6 m, SP7IDX</small></button>
+    <button type="button" role="tab" id="tab-quad" data-tab="quad" aria-selected="false">Quad<small>Cubex SkyMaster III</small></button>
   </nav>
   <div class="layout">
     <aside class="controls" aria-label="Parametry anteny">
@@ -182,11 +186,21 @@ tbody tr{cursor:pointer}
           <button type="button" data-v="flat" aria-pressed="true">płaski</button>
           <button type="button" data-v="invv">odwrócone V</button>
         </div></div>
-      <div class="ctl"><label for="pWire">Linia drutu <output id="pWireO"></output></label>
-        <input type="range" id="pWire" min="0" max="179" step="1" value="40">
+      <div class="ctl"><label for="pWire">Obrót dipola <output id="pWireO"></output></label>
+        <input type="range" id="pWire" min="0" max="359" step="1" value="310">
         <div class="num"><label for="pAz">Wiązka główna</label><input type="number" id="pAz" min="0" max="359" step="1" value="310" inputmode="numeric"><span>°</span>
           <button type="button" id="pMinus" aria-label="minus 1 stopień">−1°</button><button type="button" id="pPlus" aria-label="plus 1 stopień">+1°</button></div>
         <p class="hint" id="pHint"></p></div>
+      <div class="ctl"><label for="pSpread">Kąt między ramionami (widok z góry) <output id="pSpreadO"></output></label>
+        <input type="range" id="pSpread" min="30" max="180" step="1" value="180">
+        <div class="numg"><label for="pA1">Ramię 1</label><input type="number" id="pA1" min="0" max="359" step="1" inputmode="numeric"><span>°</span>
+          <label for="pA2">Ramię 2</label><input type="number" id="pA2" min="0" max="359" step="1" inputmode="numeric"><span>°</span></div>
+        <p class="hint">180° to prosty dipol. Mniejszy kąt zgina dipol w literę V w rzucie z góry, np. żeby ramiona zmieściły się w działce. Azymuty ramion można też wpisać wprost.</p></div>
+      <div class="ctl"><span class="lab">Ułożenie w działce</span>
+        <div class="numg" id="pOff"><label for="pCx">Środek → E</label><input type="number" id="pCx" min="-100" max="100" step="0.5"><span>m</span>
+          <label for="pCy">Środek → N</label><input type="number" id="pCy" min="-100" max="100" step="0.5"><span>m</span></div>
+        <div class="num"><button type="button" id="pFitA" class="planbtn">dopasuj kąt ramion</button><button type="button" id="pFitB" class="planbtn">najlepsze ułożenie</button></div>
+        <p class="hint" id="pFitHint"></p></div>
       </div>
 
       <div class="panel" data-tab="y15" hidden>
@@ -229,6 +243,42 @@ tbody tr{cursor:pointer}
           <button type="button" id="aMinus" aria-label="minus 1 stopień">−1°</button><button type="button" id="aPlus" aria-label="plus 1 stopień">+1°</button></div></div>
       </div>
 
+      <div class="panel" data-tab="quad" hidden>
+      <div class="ctl"><span class="lab">Cubex SkyMaster III, pasmo</span>
+        <div class="seg" id="qBand">
+          <button type="button" data-v="20" aria-pressed="true">20</button><button type="button" data-v="17">17</button><button type="button" data-v="15">15</button>
+          <button type="button" data-v="12">12</button><button type="button" data-v="10">10 m</button>
+        </div>
+        <p class="hint">Quad 3 el. na 5 pasm: kwadratowe pętle na krzyżakach z włókna szklanego, boom 5,49 m (18 ft), zasilanie na środku dolnego boku. Wymiary z instrukcji Cubex (tabela IIb).</p></div>
+      <div class="ctl"><label for="qHeight">Wysokość boomu <output id="qHeightO"></output></label>
+        <input type="range" id="qHeight" min="4" max="30" step="0.5" value="12"></div>
+      <div class="ctl"><label for="qRange">Kierunek wiązki <output id="qRangeO"></output></label>
+        <input type="range" id="qRange" min="0" max="359" step="1" value="310">
+        <div class="num"><label for="qAz">Azymut</label><input type="number" id="qAz" min="0" max="359" step="1" value="310" inputmode="numeric"><span>°</span>
+          <button type="button" id="qMinus" aria-label="minus 1 stopień">−1°</button><button type="button" id="qPlus" aria-label="plus 1 stopień">+1°</button></div></div>
+      <div class="ctl"><span class="lab">Dopasowanie</span>
+        <div class="seg" id="qMatch"><button type="button" data-v="cubex" aria-pressed="true">wg instrukcji Cubex</button><button type="button" data-v="direct">kabel 50 Ω wprost</button></div>
+        <p class="hint" id="qMatchHint"></p></div>
+      <div class="chk"><input type="checkbox" id="qMulti" checked><label for="qMulti">z pętlami pozostałych pasm (dokładniej, liczy się dłużej)</label></div>
+      <div class="chk"><input type="checkbox" id="qTune"><label for="qTune">dostrój driver do rezonansu (X = 0)</label></div>
+      </div>
+
+      <div class="panel" data-tab="hex" hidden>
+      <div class="ctl"><span class="lab">Hexbeam G3TXQ (SP7IDX), pasmo</span>
+        <div class="seg" id="hBand">
+          <button type="button" data-v="20" aria-pressed="true">20</button><button type="button" data-v="17">17</button><button type="button" data-v="15">15</button>
+          <button type="button" data-v="12">12</button><button type="button" data-v="10">10</button><button type="button" data-v="6">6 m</button>
+        </div>
+        <p class="hint">Sześć pasm na wspólnym maszcie, promień obrotu ok. 3,8 m. Liczę każde pasmo osobno.</p></div>
+      <div class="ctl"><label for="hHeight">Wysokość (druty 20 m) <output id="hHeightO"></output></label>
+        <input type="range" id="hHeight" min="2" max="20" step="0.5" value="10"></div>
+      <div class="ctl"><label for="hRange">Kierunek wiązki <output id="hRangeO"></output></label>
+        <input type="range" id="hRange" min="0" max="359" step="1" value="310">
+        <div class="num"><label for="hAz">Azymut</label><input type="number" id="hAz" min="0" max="359" step="1" value="310" inputmode="numeric"><span>°</span>
+          <button type="button" id="hMinus" aria-label="minus 1 stopień">−1°</button><button type="button" id="hPlus" aria-label="plus 1 stopień">+1°</button></div></div>
+      <div class="chk"><input type="checkbox" id="hTune" checked><label for="hTune">dostrój driver do rezonansu (X = 0)</label></div>
+      </div>
+
       <div class="ctl"><span class="lab">Obliczenia</span>
         <div class="seg" id="engine">
           <button type="button" data-v="nec" aria-pressed="true">NEC-2 (grunt rzeczywisty)</button>
@@ -246,6 +296,7 @@ tbody tr{cursor:pointer}
           <option value="y10">Yagi 10 m (z zakładki)</option>
           <option value="a3s">A3S (z zakładki)</option>
           <option value="hex">Hexbeam (z zakładki)</option>
+          <option value="quad">Quad Cubex (z zakładki)</option>
         </select>
         <div id="nbCtl" class="panel" hidden>
           <div class="ctl"><label for="nbDist">Odległość między środkami <output id="nbDistO"></output></label>
@@ -256,6 +307,10 @@ tbody tr{cursor:pointer}
             <div class="seg" id="nbTerm"><button type="button" data-v="50" aria-pressed="true">podłączona (50 Ω)</button><button type="button" data-v="open">rozwarta</button></div></div>
         </div>
         <p class="hint" id="nbHint">Wysokość, pasmo i kierunek drugiej anteny bierzemy z jej zakładki. Liczy tylko NEC-2, na częstotliwości anteny głównej.</p></div>
+      <div class="ctl" id="nbAutoBox" hidden><span class="lab">Pozostałe anteny na masztach</span>
+        <div class="chk"><input type="checkbox" id="nbAuto" checked><label for="nbAuto">licz razem z antenami z pozostałych masztów</label></div>
+        <div class="seg" id="nbTerm2"><button type="button" data-v="50" aria-pressed="true">podłączone (50 Ω)</button><button type="button" data-v="open">rozwarte</button></div>
+        <p class="hint" id="nbAutoHint"></p></div>
       <div class="ctl" id="wireBox"><label for="wireType">Drut anteny</label>
         <select id="wireType">
           <option value="UL" selected>DX-Wire UL · 0,3 mm² Cu + aramid, Ø 1,5 mm, PE</option>
@@ -274,21 +329,6 @@ tbody tr{cursor:pointer}
         </select>
         <div class="prog" id="prog" hidden><i id="progBar"></i></div>
         <p class="hint" id="radHint">Większy promień ma znaczenie dla najniższych kątów (poniżej ~5°). Dane pobierane są na żywo z Geoportalu.</p></div>
-      <div class="panel" data-tab="hex" hidden>
-      <div class="ctl"><span class="lab">Hexbeam G3TXQ (SP7IDX), pasmo</span>
-        <div class="seg" id="hBand">
-          <button type="button" data-v="20" aria-pressed="true">20</button><button type="button" data-v="17">17</button><button type="button" data-v="15">15</button>
-          <button type="button" data-v="12">12</button><button type="button" data-v="10">10</button><button type="button" data-v="6">6 m</button>
-        </div>
-        <p class="hint">Sześć pasm na wspólnym maszcie, promień obrotu ok. 3,8 m. Liczę każde pasmo osobno.</p></div>
-      <div class="ctl"><label for="hHeight">Wysokość (druty 20 m) <output id="hHeightO"></output></label>
-        <input type="range" id="hHeight" min="2" max="20" step="0.5" value="10"></div>
-      <div class="ctl"><label for="hRange">Kierunek wiązki <output id="hRangeO"></output></label>
-        <input type="range" id="hRange" min="0" max="359" step="1" value="310">
-        <div class="num"><label for="hAz">Azymut</label><input type="number" id="hAz" min="0" max="359" step="1" value="310" inputmode="numeric"><span>°</span>
-          <button type="button" id="hMinus" aria-label="minus 1 stopień">−1°</button><button type="button" id="hPlus" aria-label="plus 1 stopień">+1°</button></div></div>
-      <div class="chk"><input type="checkbox" id="hTune" checked><label for="hTune">dostrój driver do rezonansu (X = 0)</label></div>
-      </div>
 
       <div class="ctl"><label for="coaxType">Kabel zasilający</label>
         <select id="coaxType">
@@ -331,7 +371,7 @@ tbody tr{cursor:pointer}
           <figcaption><h2>Charakterystyka pozioma</h2><span class="d">Przekrój przy wybranym kącie elewacji. DX na KF przychodzi zwykle pod kątem 3–15°.</span></figcaption>
           <canvas id="azp" width="440" height="440" aria-label="Charakterystyka pozioma"></canvas>
           <div class="elctl"><label for="elSel">Elewacja</label><input type="range" id="elSel" min="1" max="45" step="1" value="10"><output id="elO" style="font-family:var(--mono);color:var(--ink)"></output></div>
-          <div class="legend"><span><span class="sw"></span>z rzeźbą terenu</span><span><span class="sw ref"></span>ta sama antena nad płaskim gruntem</span><span class="nbLeg" hidden><span class="sw nb"></span>z terenem, bez drugiej anteny</span></div>
+          <div class="legend"><span><span class="sw"></span>z rzeźbą terenu</span><span><span class="sw ref"></span>ta sama antena nad płaskim gruntem</span><span class="nbLeg" hidden><span class="sw nb"></span>z terenem, bez sąsiednich anten</span></div>
         </figure>
       </div>
 
@@ -342,7 +382,7 @@ tbody tr{cursor:pointer}
           <button type="button" id="sBeam">ustaw na wiązkę</button></div>
         <canvas id="elp" width="900" height="330" aria-label="Charakterystyka pionowa"></canvas>
         <canvas id="prof" width="900" height="170" aria-label="Profil terenu"></canvas>
-        <div class="legend"><span><span class="sw"></span>z rzeźbą terenu</span><span><span class="sw ref"></span>płaski grunt</span><span class="nbLeg" hidden><span class="sw nb"></span>z terenem, bez drugiej anteny</span></div>
+        <div class="legend"><span><span class="sw"></span>z rzeźbą terenu</span><span><span class="sw ref"></span>płaski grunt</span><span class="nbLeg" hidden><span class="sw nb"></span>z terenem, bez sąsiednich anten</span></div>
       </figure>
 
       <figure>
@@ -424,20 +464,21 @@ function buildDelta(o){
 }
 
 // ---------- horizontal dipole / inverted V ----------
-function buildDipole(o){ // o:{f,height,wireAz,shape:'flat'|'invv'}
+function buildDipole(o){ // o:{f,height,shape:'flat'|'invv', arm1,spread (plan azimuth of arm 1, included plan angle) | wireAz (straight wire line)}
   const lam=299.8/o.f, Lel=0.5*lam;               // electrical half-wave for current shape
   const vf=o.vf||1, Lbare=143/o.f, Lphys=Lbare*vf;  // bare-wire cut length × insulation shortening factor
-  const ux=Math.sin(o.wireAz*Math.PI/180), uy=Math.cos(o.wireAz*Math.PI/180);
+  const rad=Math.PI/180, a1=o.arm1!=null?o.arm1:o.wireAz+180, a2=o.arm1!=null?o.arm1+(o.spread==null?180:o.spread):o.wireAz;
+  const u1=[Math.sin(a1*rad),Math.cos(a1*rad)], u2=[Math.sin(a2*rad),Math.cos(a2*rad)];
   let droop=0; if(o.shape==='invv'){droop=Math.min(30*Math.PI/180,Math.asin(Math.min(1,Math.max(0,(o.height-2)/(Lel/2)))));}
   const N=40, segs=[];
+  const P=s=>{const a=Math.abs(s),u=s<0?u1:u2;return[a*Math.cos(droop)*u[0],a*Math.cos(droop)*u[1],o.height-a*Math.sin(droop)];};
   for(let i=0;i<N;i++){
     const s0=-Lel/2+Lel*i/N, s1=-Lel/2+Lel*(i+1)/N, sm=(s0+s1)/2;
-    const P=s=>{const a=Math.abs(s);return[s*Math.cos(droop)*ux,s*Math.cos(droop)*uy,o.height-a*Math.sin(droop)];};
     const p0=P(s0),p1=P(s1);
     segs.push({r:[(p0[0]+p1[0])/2,(p0[1]+p1[1])/2,(p0[2]+p1[2])/2],dl:[p1[0]-p0[0],p1[1]-p0[1],p1[2]-p0[2]],I:Math.cos(Math.PI*sm/Lel)});
   }
   const endH=o.height-(Lel/2)*Math.sin(droop);
-  return {kind:'dipole',segs,zc:o.height-(o.height-endH)/3,Lphys,Lbare,vf,droop:droop*180/Math.PI,endH,height:o.height};
+  return {kind:'dipole',segs,zc:o.height-(o.height-endH)/3,Lphys,Lbare,vf,droop:droop*180/Math.PI,endH,height:o.height,spread:o.arm1!=null?(o.spread==null?180:o.spread):180};
 }
 // ---------- Yagi: induced-EMF mutual impedances, parallel half-wave elements ----------
 function SiCi(x){ // numeric integration (Simpson)
@@ -743,16 +784,18 @@ function necGeomDelta(p,scale,r){
   return {wires,feed,info:{...d,kind:'delta'}};
 }
 function necGeomDipole(p,scale,r){
-  const lam=299.8/p.f, Le=143/p.f*scale, half=Le/2;
+  // antenna frame: main beam along +y (bisector of the arms), arm 1 at -spread/2, arm 2 at +spread/2 (clockwise), spread 180 = straight wire along x
+  const lam=299.8/p.f, Le=143/p.f*scale, half=Le/2, sp=(p.spread==null?180:p.spread)*Math.PI/180;
   let droop=0; if(p.shape==='invv')droop=Math.min(30*Math.PI/180,Math.asin(Math.min(1,Math.max(0,(p.height-2)/half))));
   const nl=segCount(half,lam,10), segL=half/nl, c=segL/2;  // centre feed wire has the same length as one leg segment
-  const endX=c+(half-c)*Math.cos(droop), endZ=p.height-(half-c)*Math.sin(droop);
-  const wires=[{a:[-endX,0,endZ],b:[-c,0,p.height],n:nl,r},{a:[-c,0,p.height],b:[c,0,p.height],n:1,r},{a:[c,0,p.height],b:[endX,0,endZ],n:nl,r}];
-  if(p.feedSys==='atu'||p.feedSys==='nobalun'){ // coax shield outer surface without balun: down to 0.3 m, then 15 m along the ground (toward the shack, behind the main beam)
+  const d1=[-Math.sin(sp/2),Math.cos(sp/2)], d2=[Math.sin(sp/2),Math.cos(sp/2)], L=half-c, hz=L*Math.cos(droop), endZ=p.height-L*Math.sin(droop);
+  const E1=[-c+hz*d1[0],hz*d1[1],endZ], E2=[c+hz*d2[0],hz*d2[1],endZ];
+  const wires=[{a:E1,b:[-c,0,p.height],n:nl,r},{a:[-c,0,p.height],b:[c,0,p.height],n:1,r},{a:[c,0,p.height],b:E2,n:nl,r}];
+  if(p.feedSys==='atu'||p.feedSys==='nobalun'){ // coax shield outer surface without balun: down to 0.3 m, then along the ground (toward the shack, behind the main beam)
     const rc=p.coaxR||0.0025, zB=0.3, drop=p.height-zB, run=Math.max(1,(p.coaxLen||20)-drop), nv=Math.max(3,Math.ceil((p.height-zB)/(lam/40))), nh=Math.max(3,Math.ceil(run/(lam/40)));
     wires.push({a:[c,0,p.height],b:[c,0,zB],n:nv,r:rc},{a:[c,0,zB],b:[c,-run,zB],n:nh,r:rc});
   }
-  return {wires,feed:{tag:2,seg:1},info:{kind:'dipole',Le,droop:droop*180/Math.PI,endH:endZ,height:p.height}};
+  return {wires,feed:{tag:2,seg:1},info:{kind:'dipole',Le,droop:droop*180/Math.PI,endH:endZ,height:p.height,spread:sp*180/Math.PI}};
 }
 // Yagi dimensions tuned with NEC-2 in free space (positions from reflector, element lengths, tube radius) [m]
 const NEC_YAGI={
@@ -797,18 +840,18 @@ function wireSegs(wires){const segs=[];
 // ---- analysis: tune to resonance (wire antennas), then pattern over Sommerfeld-Norton ground
 async function necAnalyze(t,p,wireR,ground,extra){
   const gr={er:ground.er,sig:ground.sig};
-  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.design,p.band,wireR,gr]);
+  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,gr]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   let scale=1, tuned=false; const geomOf=s=>necGeom(t,p,s,wireR);
-  if(t==='delta'||t==='dipole'||(t==='hex'&&p.tune)){ // secant search for X=0 at the resonance frequency
-    const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,p.f,gr,['XQ']))).X;};
-    let s0=1,x0=await X(s0),s1=t==='hex'?0.98:0.97,x1=await X(s1);
+  if(t==='delta'||t==='dipole'||((t==='hex'||t==='quad')&&p.tune)){ // secant search for X=0 at the resonance frequency
+    const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,p.f,gr,['XQ'],ldCards(g.loads)))).X;};
+    let s0=1,x0=await X(s0),s1=(t==='hex'||t==='quad')?0.98:0.97,x1=await X(s1);
     for(let k=0;k<6&&Math.abs(x1)>1;k++){if(x1===x0)break;const s2=Math.min(1.3,Math.max(0.75,s1-x1*(s1-s0)/(x1-x0)));s0=s1;x0=x1;s1=s2;x1=await X(s1);}
     scale=s1; tuned=true;
   }
   const g=geomOf(scale); let metalSkipped=false;
   if(extra){if(minWireDist(g.wires,extra.wires)<0.3){metalSkipped=true;extra=null;}else g.wires=g.wires.concat(extra.wires);}
-  const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,gr,['RP 0 91 72 1001 0 0 1 5']));
+  const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,gr,['RP 0 91 72 1001 0 0 1 5'],ldCards(g.loads)));
   const Z=parseZ(out), segs=wireSegs(g.wires), cur=parseCurrents(out,segs.length), pat=parsePattern(out);
   segs.forEach((s,i)=>{s.I=1;s.Ic=cur[i]||[0,0];});
   const nAnt=extra?segs.length-wireSegs(extra.wires).length:segs.length;
@@ -829,31 +872,39 @@ function rotateSegs(segs,beam){const b=beam*Math.PI/180,c=Math.cos(b),s=Math.sin
   const R=v=>[v[0]*c+v[1]*s,-v[0]*s+v[1]*c,v[2]];
   return segs.map(g=>({r:R(g.r),dl:R(g.dl),I:g.I,Ic:g.Ic}));}
 
-function necGeom(t,p,s,r){return t==='delta'?necGeomDelta(p,s,r):t==='dipole'?necGeomDipole(p,s,r):t==='hex'?necGeomHex(p,s):necGeomYagi(t,p);}
+function necGeom(t,p,s,r){return t==='delta'?necGeomDelta(p,s,r):t==='dipole'?necGeomDipole(p,s,r):t==='hex'?necGeomHex(p,s):t==='quad'?necGeomQuad(p,s):necGeomYagi(t,p);}
+const ldCards=(L,off=0)=>(L||[]).map(l=>`LD 4 ${l.tag+off} ${l.seg} ${l.seg} ${l.R} 0`);
 function geomRadius(g){let m=0;g.wires.forEach(w=>[w.a,w.b].forEach(v=>m=Math.max(m,Math.hypot(v[0],v[1]))));return m;}
-// Main antenna with a second (passive) antenna nearby. nb:{type,p,beam,dist,brg,term}; mainBeam = compass azimuth of main beam.
-async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nb,extra){
+// Main antenna together with other (passive) antennas nearby. nbs:[{type,p,beam,dist,brg,term,name}] (a single object is accepted too); mainBeam = compass azimuth of main beam.
+async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nbs,extra){
+  if(!Array.isArray(nbs))nbs=[nbs];
   const gr={er:ground.er,sig:ground.sig};
   const base=await necAnalyze(t,p,wireR,ground,extra);
-  const nbBase=await necAnalyze(nb.type,nb.p,wireR,ground);
-  const g1=necGeom(t,p,base.scale,wireR), g2=necGeom(nb.type,nb.p,nbBase.scale,wireR);
-
-  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.design,p.band,wireR,gr,mainBeam,nb.type,nb.p,nb.beam,nb.dist,nb.brg,nb.term]);
+  const g1=necGeom(t,p,base.scale,wireR);
+  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
-  // neighbour: rotate by (its beam − main beam) clockwise, then place at its position expressed in the main antenna frame
-  const rel=(nb.beam-mainBeam)*Math.PI/180, c=Math.cos(rel), sn=Math.sin(rel);
-  const rot=v=>[v[0]*c+v[1]*sn,-v[0]*sn+v[1]*c,v[2]];
-  const pb=(nb.brg-mainBeam)*Math.PI/180, off=[nb.dist*Math.sin(pb),nb.dist*Math.cos(pb),0];
-  const w2=g2.wires.map(w=>({a:rot(w.a).map((v,i)=>v+off[i]),b:rot(w.b).map((v,i)=>v+off[i]),n:w.n,r:w.r}));
-  const minD=minWireDist(g1.wires,w2); if(minD<0.5)return {overlap:true,minD};
-  if(extra&&(base.metalSkipped||minWireDist(w2,extra.wires)<0.3))extra=null;
-  const wires=g1.wires.concat(w2,extra?extra.wires:[]), nbTag=g1.wires.length+g2.feed.tag;
-  const Rl=nb.term==='50'?50:1e9;
-  const out=await necRun(wiresToDeck(wires,g1.feed,p.f,gr,['RP 0 91 72 1001 0 0 1 5'],[`LD 4 ${nbTag} ${g2.feed.seg} ${g2.feed.seg} ${Rl} 0`]));
+  const used=[], skipped=[]; let wires=g1.wires.slice();
+  const loads=ldCards(g1.loads);
+  for(const nb of nbs){
+    const nbBase=await necAnalyze(nb.type,nb.p,wireR,ground);
+    const g2=necGeom(nb.type,nb.p,nbBase.scale,wireR);
+    // neighbour: rotate by (its beam − main beam) clockwise, then place at its position expressed in the main antenna frame
+    const rel=(nb.beam-mainBeam)*Math.PI/180, c=Math.cos(rel), sn=Math.sin(rel);
+    const rot=v=>[v[0]*c+v[1]*sn,-v[0]*sn+v[1]*c,v[2]];
+    const pb=(nb.brg-mainBeam)*Math.PI/180, off=[nb.dist*Math.sin(pb),nb.dist*Math.cos(pb),0];
+    const w2=g2.wires.map(w=>({a:rot(w.a).map((v,i)=>v+off[i]),b:rot(w.b).map((v,i)=>v+off[i]),n:w.n,r:w.r}));
+    const minD=minWireDist(wires,w2); if(minD<0.5){skipped.push({...nb,minD});continue;}
+    const tag=wires.length+g2.feed.tag; loads.push(...ldCards(g2.loads,wires.length)); wires=wires.concat(w2);
+    loads.push(`LD 4 ${tag} ${g2.feed.seg} ${g2.feed.seg} ${nb.term==='50'?50:1e9} 0`); used.push({...nb,minD});
+  }
+  if(!used.length){const res={overlap:true,skipped,used};return res;}
+  if(extra&&(base.metalSkipped||minWireDist(wires.slice(g1.wires.length),extra.wires)<0.3))extra=null;
+  if(extra)wires=wires.concat(extra.wires);
+  const out=await necRun(wiresToDeck(wires,g1.feed,p.f,gr,['RP 0 91 72 1001 0 0 1 5'],loads));
   const Z=parseZ(out), segs=wireSegs(wires), cur=parseCurrents(out,segs.length), pat=parsePattern(out);
   segs.forEach((q,i)=>{q.I=1;q.Ic=cur[i]||[0,0];});
   let wz=0,ws=0;segs.slice(0,wireSegs(g1.wires).length).forEach(q=>{const a=Math.hypot(...q.Ic)*Math.hypot(...q.dl);wz+=a*q.r[2];ws+=a;});
-  const res={Z,segs,zc:wz/ws,pat,info:base.info,scale:base.scale,tuned:base.tuned,base,nbWires:w2};
+  const res={Z,segs,zc:wz/ws,pat,info:base.info,scale:base.scale,tuned:base.tuned,base,used,skipped,metalSkipped:base.metalSkipped};
   NEC.cache.set(key,res); if(NEC.cache.size>60)NEC.cache.delete(NEC.cache.keys().next().value);
   return res;
 }
@@ -916,6 +967,36 @@ function necGeomHex(p,scale=1){
   return {wires,feed:{tag:1,seg:1},info:{kind:'hex',height:p.height,zBand:z,R,band:p.band,lam,dims:H,dHalf:R+td,tail:td,gap:R-td-tr}};
 }
 
+// ---- Cubex SkyMaster III: 3-element quad, 20/17/15/12/10 m, square loops on X spreaders, feed at the bottom centre.
+// Per-side dimensions [in] from the Cubex manual (Table IIb); boom 18 ft: reflector 0, driven 10 ft, director 18 ft, mast 6 in toward the reflector from the boom centre.
+const QUAD={
+  '20':{f:14.175,r:218.0,d:212.0,dir:207.25},
+  '17':{f:18.118,r:170.5,d:166.5,dir:161.5},
+  '15':{f:21.225,r:145.0,d:142.0,dir:139.0},
+  '12':{f:24.940,r:124.0,d:120.75,dir:117.25},
+  '10':{f:28.500,r:107.5,d:105.0,dir:100.8}
+};
+const IN=0.0254, QUAD_Y=[0,120,216].map(v=>(v-102)*IN), QUAD_WR=0.0008;   // element positions from the mast [m], wire AWG 14
+function quadLoop(side,y,zc,lam,feed){ // square loop in the x–z plane at y, bottom side horizontal; with feed: bottom side split around a 1-segment feed wire (returned first-of-3)
+  const h=side/2, n=L=>Math.max(3,Math.ceil(L/(lam/40))), r=QUAD_WR;
+  const BL=[-h,y,zc-h],BR=[h,y,zc-h],TR=[h,y,zc+h],TL=[-h,y,zc+h];
+  const sides=[{a:BR,b:TR,n:n(side),r},{a:TR,b:TL,n:n(side),r},{a:TL,b:BL,n:n(side),r}];
+  if(!feed)return [{a:BL,b:BR,n:n(side),r},...sides];
+  const N=n(side)|1, c=side/N/2, nh=(N-1)/2;
+  return [{a:BL,b:[-c,y,zc-h],n:nh,r},{a:[-c,y,zc-h],b:[c,y,zc-h],n:1,r},{a:[c,y,zc-h],b:BR,n:nh,r},...sides];
+}
+function necGeomQuad(p,scale=1){
+  const zc=p.height, wires=[], loads=[]; let feed=null;
+  const bands=p.multi?Object.keys(QUAD):[p.band];
+  for(const b of bands){const Q=QUAD[b], lam=299.8/Q.f, main=b===p.band;
+    wires.push(...quadLoop(Q.r*IN,QUAD_Y[0],zc,lam,false));
+    const t0=wires.length; wires.push(...quadLoop(Q.d*IN*(main?scale:1),QUAD_Y[1],zc,lam,true));
+    if(main)feed={tag:t0+2,seg:1}; else loads.push({tag:t0+2,seg:1,R:50});   // other bands' driven loops: terminated by their feed lines
+    wires.push(...quadLoop(Q.dir*IN,QUAD_Y[2],zc,lam,false));}
+  const Q=QUAD[p.band], big=QUAD[bands[0]];
+  return {wires,feed,loads,info:{kind:'quad',height:p.height,band:p.band,lam:299.8/Q.f,dims:Q,side:{r:Q.r*IN,d:Q.d*IN*scale,dir:Q.dir*IN},bottom:zc-Q.r*IN/2,bottomAll:zc-big.r*IN/2,boom:216*IN,multi:!!p.multi}};
+}
+
 // Metal objects (e.g. a steel trailer, a tin garage) as NEC wire grids. poly: 4 corners in the antenna frame [m], z0..z1 height.
 function wireBox(poly,z0,z1,step=1.0,r=0.005){
   const len=i=>{const a=poly[i],b=poly[(i+1)%4];return Math.hypot(b[0]-a[0],b[1]-a[1]);};
@@ -933,10 +1014,10 @@ function wireBox(poly,z0,z1,step=1.0,r=0.005){
 
 // "Catalogue" gain: the same antenna alone in free space (no ground, no metal, no neighbour).
 async function necFreeSpace(t,p,wireR,scale){
-  const key=JSON.stringify(['fs',NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.height,p.shape,p.design,p.band,wireR,scale]);
+  const key=JSON.stringify(['fs',NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.height,p.shape,p.spread,p.multi,p.design,p.band,wireR,scale]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
-  const g=necGeom(t,p,scale,wireR);
-  const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,{er:1,sig:0},['RP 0 37 72 1000 0 0 5 5'],null,true));
+  const g=necGeom(t,{...p,feedSys:'balun11'},scale,wireR);  // catalogue gain: the antenna alone, without the coax shield
+  const out=await necRun(wiresToDeck(g.wires,g.feed,p.f,{er:1,sig:0},['RP 0 37 72 1000 0 0 5 5'],ldCards(g.loads),true));
   let best={g:-999,th:90,ph:90},fwd=null,back=null;const i=out.indexOf('RADIATION PATTERNS');
   for(const l of out.slice(i).split('\n')){const q=l.trim().split(/\s+/);if(q.length>=5&&/^-?\d+\.\d+$/.test(q[0])&&/^-?\d+\.\d+$/.test(q[1])){
     const th=parseFloat(q[0]),ph=parseFloat(q[1]),gv=parseFloat(q[4]);if(gv>best.g)best={g:gv,th,ph};
@@ -946,7 +1027,7 @@ async function necFreeSpace(t,p,wireR,scale){
 }
 
 const TERRAIN_LINES = ["KNNNNNNMMMNNNOPPRQQPPPOMKIGFDBA?<=<:888201110112211103----384354344443444443433444444444445555555555666666665666776676677", "KNNNNNNLLLMLMMMNNNOMLKKIFCBA?><;:::898876222213---53596744455444544665555677778778777778899:;;;=======?>>>====777::=BAA?=", "KNNNONNNKKKKKKLLLLLKKJIHGFEDCA=>=<:9876444402--23;77844444444444544566<<<;;<<;;?=>??======>ABC??EIGHIJKLLMNOOOOOONONMLJII", "KNNNOONNMKJIHIJIJJIIIHHGFFCBA?>;:977665400/--/=98765557::<<=>>=<;;;<<=>>>??@@@@AAABBCDEFGIIJKLLLKLLNOPQSTUVWXYZZ[[[ZYWWUR", "KMNNNNOONMKIHGEDEDDDDDDCDCDCA@>=832675565-.7=79;=;<=>>>??>>==<<>?ACDEFGHHJJIIJIIIIIIJLMNPQRSSTUVVWXXX[[[]^_abcddeffggggfe", "KKNNNOOOONLLKGC>ABA@>>>>:644506655557985336=>>>CGJJIIIHHHFFFFGFFFDECDBCDEGIJKMNPPSSTUVXXYYYZZZ[]^_^]_bcdfghjkmnqrtvxyz{|{", "KIKNOOOPONNLKJDCBBA@@??>7333558777767775334>===>@ERTUSSRRRRRSRRQQPPPPPPOONLKKIHJKKLLMNOPQSUUWYZ^_bdgikmnpsvwxxyyyyzz{|}~}", "KIIKLOOPOPOMLECAAA@=<=>=;73406899:9;9::::333==>>>@>>BPPRRQTSSTUVWXYZZ[[]^]][[ZZYXXYYYZZZZ]]_ddeghhijkklmopqrsuuuwwxxyz{|}", "KIIJNOPPQQPOMIF@@BBAA?=<::99753797798;;889993339>>=>BBBCDBCCFIJKLLKOOOQRSTTUVYYZZ[^baccdddeefffghhhhhijkmnnpppppqqnnnnttt", "KIIIHIIIPQQPOOKGFGGGEDAA@@A@?<:8607344333666666683337?6=>==?A<:989:;BDFHJKMOPQQRRTUUVWWXXXXXXXXXYY[][][ZZZ[]_acdeeecbbaaa", "KIIJIIQPPQRQQQPOOKMKKJIIIHECABB@<975561864:55544448844876333333678889:>>>>@>@@AABCKLLLKKKJJHDDDEEEEEEGIHHIIJJJJJJJIKHHILI", "KIIIHQQPOORRRSTTSSQQQQPPOMIGGEA?;753344435335447775578877777733333333566666666533333335667999:>@@;<=>?ABCEGHHIIIJKOOOQRUW", "KIJIPQQPQRRTUUUUUUUTSTTSQOLJGC?::765444444445555554756744444443444444444444444556678555898888888999899999999:<<;<=;<<<<<<", "KJIIJPQQRSTTUVVWVWVVVVUSQPNLIFB?=:9765433333344444564444444555564444445455556998555555555555555556566666666666876::766777", "KKIIJNQRSSSSTUVWWXWWXWWWWVUSQOMJGDA?<::9877443333444678999999998899989<=>>>>?ANKDHEB@??<<;:9<>=788:;<;<4756666668:6666666", "KKIIIKQRRRSSSTWWWWXYZZZZZZZYYXWVVUTRQONMLKKKJJJKJIHGFDCCBAA@@?@???>=<<;<=>>>>>>>?@@?>?????@??AAAAAAAAAAGHHHIIJKKKIGCJJJKK", "KKIIIIJMLPQQRSTUUUUWYYYYZ[]]]]^__a____^]][YXWVUSSPOOLKIHHCCDCBAAAAAA>>>???@@@??EHGFBCDDEEFGGGFGHIKLMMOOOOOMNOPRUVXXYZZZ[]", "KKIIIIIIIIPRRRRSTTTUUWXZ[]______abbbbbbba^][ZZZYXXPOONMMLJIIHECIICBBA@@CMMMNLMGJOSSSRSUWWXXYZZZ]]^^____abcefffffffeecddef", "KKIIIIIIIJKQQRRRSUTTUVVVVV]]^__abbccddddcdcbbbccYXYY][ZXXWURQONLLLJGECAAABBEIKMSUUYYZ[[]_bcddddeffgghiiijklmmmmlmlnnnnoop", "KLIIIIIIIKKNRRRRSUVVVVVVV[]]__abccddfgghhhiihjjjjhjjijhfecba]XSPPQPPNMLKKJFFGHIJLNNMLJKNOQSP_aghiigjkjkkkkkllkkkkiggffhik", "KLIIIIIKKKKMQRUUUVVVVVV]]^^fqnkfggffffghfiejkklkjkkllllllllmlkkkkkkjhbaa_^[VQVaaaaaa^^XWVUTVUSRQPPPUY[acefggfec_[XWZY[_bc", "KLIIIPKOOLPPQRQRRQQRVW][]]bcdefgggggggggijhhliiiijkijlllllllllkklkllkkkjgggffffffffffffffffhffeeeeddca^[^aa^[YZ]adfghihii", "KLMMNQQPOPPPQQQRRSUUVZ]]^_abaabddeeeffghihffiefffffdhihiihhhiiiiihjjgfffffffhhghhiijkkkjjjihiiihhggghhhhhiijjkkkklmllmlll", "KLJNPQQQPPQQQQSSTYYZ[[[^__a_^____aacbaaabccccdbcccbbbbbbcccccccceefffffffgddddeefgggggffgffeeefefgfgghhhgggggggggghijjjkk", "KLJOLQQQPQQRQQRSZZ[[[[[[]]]]]^___a^bgggifbbbbaaba]^^]]][]]]]^]^^]]]]][ZYYZZ[[ZZZ[]]^^^^__aaabbba__^^^^_^^^__aaaabaaaa_^]]", "KLJOMPRMMNNRQRUVXYYZ[[Z[]]]]^^[[[]]^]_^^____^^^^^^^^a^]][ZYYXWUTRPSTUUUUTSQQRRRQTVWXYYYZZZZ[[[[[[[[[Z[ZYVUQUVWXYZ[]]]^^^_", "KLKNMPRUSSUUTUVWXXYZZZZ][[[[[[[[]]]]]][[[ZZZZZZYYYYYXXXXXWWVXTTSSSSRRRRQRSSSNKGEJMOPPQQQQRSQRQPNLKHCBBCCCCCCDDABBIIIHIIKK", "KLNOMNSSSTUUUUWXXYYYYXZZZZZZZZ[[]WW[ZZZZYYYXXXWWVUTSSQPPPPPOPPPPQRRRRRSSRNPSSQPPOOON@@?>??@@CBDEFGHJKKMOQRSSUUVVWXXYYZZZ[", "KLNOMMSSTTUUUUVVWXXXXXYYYXXXXXXXXXZYYYYYXXXWWWWVVVUTSRQPOMLLKKKLMMNNNNNOOOOOPNMMKJHFEA=>>@BBBDEEFGIJKKKKLLLMMKLLLMMNNOOPQ", "KMOOQMRSSSTUUUVVWWWVWWWWWWXWVVVVVUUVWWVVUVVVUUUUTTTSSRRPPOMLKJIHIIIJJJKKKKJJJJJJJHFC<;;<<==>?@ABCDEEFGHIIJJKLMMNNNNNOOOOO", "KNOPPNMSSSSTUUUUUVVWWWWWWWWWWWVUVUUTTTUTTSSSSRQQPPOONNMLLKJJIHGGGFFFGHHIIIIIJJJJIHGFFDBA@?<:99;;<=?@ABBCDFGHIJJKKLLMMLLLK", "KNOPQQNRRRSTTSTTUUUTUVVVWVVVTTTTTTSVRRRRRRQQQPPONMLKJIHHGFEDCCBAABCDEGHHHGGHHHGFFDBA@>=988899:<<>@AABCCDEFFGGHHIHHHHHHGGF", "KNOPPQQQPPRRSTUUUUUUTUUTTTUTUWRRROPPPOONNMMMMLLKKJIHGGFFEDCBA@?>>>?@AABBBCCDEDDDCCA@>;8666777789;=>@AABCCCDCCCBBA@?@>>==<", "KNNPPOQPOOPQRSTTTTTTTTTTTTVWRQPNNLKJIHHGFEEEEDCBBBCCCDDDDDDEDCBA@@?=<<<;;;;====>>=;:8765434912222011222222200/0///...--*$", "KNNOOPOONNOQRSSTTTTTUTTSSRRPNLKIGGFGHHGFEDB@?=;985521/0111//8;78;:9742221221751110+*+0111///../////'%$$$$$$$$$$$$$$$$$$$$", "KNNONOONMNOPPQRSTTTTTSRQPNLJIFDCBCDDDCBA?=;211//11100000/////1100/5889:51/22110122-,-)('&)''&%%%%&&%&&''()&&&'+222113330-"];
-const SITECFG={"loc": "JO90HH", "lat": 50.333, "lon": 18.61135, "N": 274054.4, "E": 472347.9, "h0": 223.7, "base": 199, "step": 0.61, "tabs": ["delta", "dipole", "y15", "y10", "a3s", "hex"], "planR": 30, "obstMin": 30, "parcel": [[-18.4, 4.7], [14.1, 12.3], [17.4, -4.8], [-13.3, -12.1]], "parcelLabel": "działka SQ9UM", "callsign": "SQ9UM", "masts": [{"id": "M1", "name": "M1", "pos": [-14.2, 1.9], "ant": "y15:5el"}, {"id": "M2", "name": "M2", "pos": [-12.0, -9.1], "ant": "a3s"}, {"id": "M3", "name": "M3", "pos": [9.3, 1.5], "ant": "y15:4el"}], "metal": [{"name": "domek (przyczepa holenderska)", "poly": [[0.5, 4.88], [3.81, 5.62], [5.71, -2.73], [2.48, -3.47]], "z0": 0.3, "z1": 3.0}, {"name": "garaż blaszany", "poly": [[2.73, -3.64], [5.21, -3.14], [5.54, -5.04], [2.98, -5.62]], "z0": 0.05, "z1": 2.15}], "defaults": {"y15": {"height": 7}, "a3s": {"height": 7}, "y10": {"height": 7}, "hex": {"height": 7}}, "apexHint": "Wierzchołek na drzewie albo maszcie. Działka ma ok. 33 × 17 m, dłuższy bok w linii 77°–257°.", "note": "Działka SQ9UM (ok. 33 × 17 m, ROD przy dz. ewid. 288, Stare Łabędy) leży na łagodnym zboczu, 224 m n.p.m. Na północ i północny wschód teren opada o 15–20 m w ciągu 1–1,5 km, dalej jest dolina i ponowne wzniesienie. Na południe i południowy zachód teren wznosi się o 10–15 m. Na działce stoją trzy maszty o regulowanej wysokości (domyślnie 7 m): M1 (Yagi 5 el. 15 m), M2 (A3S) i M3 (Yagi 4 el. 15 m). Są też domek, czyli metalowa przyczepa holenderska ok. 3 m, drewniana altana i garaż blaszany 2,15 m. Najbliższe budynki poza działką stoją 115–190 m dalej (hale do 17 m na zachodzie)."};
+const SITECFG={"loc": "JO90HH", "lat": 50.333, "lon": 18.61135, "N": 274054.4, "E": 472347.9, "h0": 223.7, "base": 199, "step": 0.61, "tabs": ["delta", "dipole", "y15", "y10", "a3s", "hex", "quad"], "planR": 30, "obstMin": 30, "parcel": [[-18.4, 4.7], [14.1, 12.3], [17.4, -4.8], [-13.3, -12.1]], "parcelLabel": "działka SQ9UM", "callsign": "SQ9UM", "masts": [{"id": "M1", "name": "M1", "pos": [-14.2, 1.9], "ant": "y15:5el"}, {"id": "M2", "name": "M2", "pos": [-12.0, -9.1], "ant": "a3s"}, {"id": "M3", "name": "M3", "pos": [9.3, 1.5], "ant": "y15:4el"}], "metal": [{"name": "domek (przyczepa holenderska)", "poly": [[0.5, 4.88], [3.81, 5.62], [5.71, -2.73], [2.48, -3.47]], "z0": 0.3, "z1": 3.0}, {"name": "garaż blaszany", "poly": [[2.73, -3.64], [5.21, -3.14], [5.54, -5.04], [2.98, -5.62]], "z0": 0.05, "z1": 2.15}], "defaults": {"y15": {"height": 7}, "a3s": {"height": 7}, "y10": {"height": 7}, "hex": {"height": 7}, "quad": {"height": 7}}, "apexHint": "Wierzchołek na drzewie albo maszcie. Działka ma ok. 33 × 17 m, dłuższy bok w linii 77°–257°.", "note": "Działka SQ9UM (ok. 33 × 17 m, ROD przy dz. ewid. 288, Stare Łabędy) leży na łagodnym zboczu, 224 m n.p.m. Na północ i północny wschód teren opada o 15–20 m w ciągu 1–1,5 km, dalej jest dolina i ponowne wzniesienie. Na południe i południowy zachód teren wznosi się o 10–15 m. Na działce stoją trzy maszty o regulowanej wysokości (domyślnie 7 m): M1 (Yagi 5 el. 15 m), M2 (A3S) i M3 (Yagi 4 el. 15 m). Są też domek, czyli metalowa przyczepa holenderska ok. 3 m, drewniana altana i garaż blaszany 2,15 m. Najbliższe budynki poza działką stoją 115–190 m dalej (hale do 17 m na zachodzie)."};
 const PROF = decodeTerrain(TERRAIN_LINES,SITECFG.base,SITECFG.step);
 const EMBED={step:25,profiles:PROF,radius:3};
 let TER=EMBED;
@@ -1008,25 +1089,27 @@ const DX=DXT.map(([n,la,lo])=>[n,bearing(SITECFG.lat,SITECFG.lon,la,lo)]);
 const state={tab:'delta',ground:'avg',sel:310,el:10};
 const P={
   delta:{f:7.1,apex:7,bottom:2.5,orient:40,feed:'corner',balun:4},
-  dipole:{f:7.1,height:7,wireAz:40,shape:'flat',feedSys:'balun11'},
+  dipole:{f:7.1,height:7,arm1:220,spread:180,cx:0,cy:0,shape:'flat',feedSys:'balun11'},
   eatu:{QL:100},
   y15:{f:21.2,height:12,beamAz:310,design:'5el'},
   y10:{f:28.5,height:10,beamAz:310,design:'5el'},
   a3s:{f:14.15,band:'20',height:12,beamAz:310,design:'a3s20',lossDb:0.5},
-  hex:{f:14.175,band:'20',height:10,beamAz:310,tune:true}
+  hex:{f:14.175,band:'20',height:10,beamAz:310,tune:true},
+  quad:{f:14.175,band:'20',height:12,beamAz:310,tune:false,multi:true,match:'cubex'}
 };
 for(const k in (SITECFG.defaults||{}))Object.assign(P[k],SITECFG.defaults[k]);
+if(P.dipole.wireAz!=null){P.dipole.arm1=(P.dipole.wireAz+180)%360;delete P.dipole.wireAz;}
 // DX-Wire data (dx-wire.de table): conductor cross-section [mm²] (all metal), outer Ø [mm], insulation εr
 const WIRES={UL:{A:0.3,D:1.5,er:2.3,n:'DX-Wire UL'},FL:{A:1.0,D:2.1,er:2.3,n:'DX-Wire FL'},FS:{A:2.0,D:2.8,er:2.3,n:'DX-Wire FS'},
   HDL:{A:1.97,D:3.0,er:2.3,n:'DX-Wire HDL'},PREMIUM:{A:1.17,D:2.0,er:2.1,n:'DX-Wire PREMIUM'},BARE:{n:'goły drut'}};
 state.bld=true; state.metal=true; state.planR=SITECFG.planR||500; state.coax={type:'rg58',len:20};
-state.wire='UL'; state.vfCustom=0.975; state.engine='nec'; state.nb={type:'',dist:20,brg:130,term:'50'};
+state.wire='UL'; state.vfCustom=0.975; state.fitMsg=''; state.engine='nec'; state.nb={type:'',dist:20,brg:130,term:'50'}; state.nbAuto=true;
 function wireRadius(){const w=WIRES[state.wire];return (w&&w.A?Math.sqrt(w.A/Math.PI):Math.sqrt(1/Math.PI))*1e-3;}
 // insulation shortening: VF = 1/sqrt(1 + (1-1/εr)·ln(b/a) / ln(Lhalf/a))
 function wireVF(f){const w=WIRES[state.wire]; if(state.wire==='CUSTOM')return state.vfCustom; if(!w||!w.A)return 1;
   const a=Math.sqrt(w.A/Math.PI)*1e-3, b=w.D/2*1e-3, Lh=(143/f)/2;
   return 1/Math.sqrt(1+(1-1/w.er)*Math.log(b/a)/Math.log(Lh/a));}
-const TABNAME={delta:'Pionowa delta',dipole:'Dipol',y15:'Yagi 15 m',y10:'Yagi 10 m',a3s:'Cushcraft A3S',hex:'Hexbeam'};
+const TABNAME={delta:'Pionowa delta',dipole:'Dipol',y15:'Yagi 15 m',y10:'Yagi 10 m',a3s:'Cushcraft A3S',hex:'Hexbeam',quad:'Quad Cubex SkyMaster III'};
 const bandName=f=>f<2?'160 m':f<4.1?'80 m':f<5.5?'60 m':f<7.4?'40 m':f<10.2?'30 m':f<14.4?'20 m':f<18.2?'17 m':f<21.5?'15 m':f<25?'12 m':'10 m';
 const norm=v=>((Math.round(v)%360)+360)%360;
 function nbParse(type){const [tab,des]=String(type||'').split(':');return {tab,des};}
@@ -1034,24 +1117,61 @@ function nbSame(type,t){const n=nbParse(type);return n.tab===t&&(t!=='y15'||(n.d
 function nbParams(type){const n=nbParse(type);return n.des?{...P[n.tab],design:n.des}:P[n.tab];}
 function nbName(type){const n=nbParse(type);return n.tab==='y15'?'Yagi 15 m '+(n.des||P.y15.design).replace('el',' el.'):TABNAME[n.tab];}
 function antKey(tab,p){return tab==='y15'?'y15:'+p.design:tab;}
-const ANTNAME={'y15:5el':'Yagi 5 el. 15 m','y15:4el':'Yagi 4 el. 15 m',a3s:'A3S',y10:'Yagi 10 m',hex:'Hexbeam',delta:'Delta',dipole:'Dipol'};
+const ANTNAME={'y15:5el':'Yagi 5 el. 15 m','y15:4el':'Yagi 4 el. 15 m',a3s:'A3S',y10:'Yagi 10 m',hex:'Hexbeam',quad:'Quad Cubex',delta:'Delta',dipole:'Dipol'};
 state.mastAssign={};(SITECFG.masts||[]).forEach(m=>{if(m.ant)state.mastAssign[m.ant]=m.id;});
 function mastFor(tab,p){const id=state.mastAssign[antKey(tab,p)];return (SITECFG.masts||[]).find(m=>m.id===id)||null;}
+function antPos(tab,p){const m=mastFor(tab,p);return m?m.pos:tab==='dipole'?[p.cx||0,p.cy||0]:null;}
+const RAD=Math.PI/180;
+function inPoly(q,Pg){let c=false;for(let i=0,j=Pg.length-1;i<Pg.length;j=i++){const a=Pg[i],b=Pg[j];if((a[1]>q[1])!==(b[1]>q[1])&&q[0]<(b[0]-a[0])*(q[1]-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;}
+function edgeDist(q,Pg){let m=1e9;for(let i=0,j=Pg.length-1;i<Pg.length;j=i++){const a=Pg[j],b=Pg[i],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/(dx*dx+dy*dy)));m=Math.min(m,Math.hypot(q[0]-a[0]-t*dx,q[1]-a[1]-t*dy));}return m;}
+function parcelRay(o,az){const Pg=SITECFG.parcel,d=[Math.sin(az*RAD),Math.cos(az*RAD)];let best=Infinity;  // distance from o along az to the parcel boundary
+  for(let i=0,j=Pg.length-1;i<Pg.length;j=i++){const a=Pg[j],b=Pg[i],ex=b[0]-a[0],ey=b[1]-a[1],den=d[0]*ey-d[1]*ex;if(Math.abs(den)<1e-12)continue;
+    const wx=a[0]-o[0],wy=a[1]-o[1],t=(wx*ey-wy*ex)/den,u=(wx*d[1]-wy*d[0])/den;if(t>1e-9&&u>=0&&u<=1)best=Math.min(best,t);}return best;}
+// dipole arms in plan: azimuths, horizontal reach, ends (local E/N metres), fit in the parcel
+function dipoleLayout(g){const p=P.dipole,o=antPos('dipole',p),reach=g.Lphys/2*Math.cos((g.droop||0)*RAD),Pg=SITECFG.parcel;
+  const arms=[p.arm1,norm(p.arm1+p.spread)].map((az,i)=>{const e=[o[0]+reach*Math.sin(az*RAD),o[1]+reach*Math.cos(az*RAD)];
+    const r={i:i+1,az,end:e,reach};if(Pg){r.inside=inPoly(e,Pg);r.edge=edgeDist(e,Pg);r.ray=parcelRay(o,az);}return r;});
+  return {o,reach,arms,centerIn:Pg?inPoly(o,Pg):true};}
+const FIT_MARGIN=0.5;
+function fitDipole(keepBeam){const p=P.dipole,g=RT.geo,Pg=SITECFG.parcel;if(!Pg||g.kind!=='dipole')return null;
+  const o=antPos('dipole',p);if(!inPoly(o,Pg))return {err:'Środek dipola jest poza działką. Przesuń go albo wybierz maszt.'};
+  const kV=s=>1+0.095*Math.pow(1-Math.sin(s/2*RAD),1.5), reach=g.Lphys/2*Math.cos((g.droop||0)*RAD), base=reach/kV(p.spread);  // a V needs a slightly longer wire for resonance (NEC: ~+1 % at 104°, ~+3.5 % at 56°)
+  const D=[];for(let a=0;a<360;a++)D[a]=parcelRay(o,a);
+  let need=base+FIT_MARGIN;
+  const ok=a=>D[norm(Math.round(a))]>=need, cur=beamOf('dipole'), dd=(a,b)=>{const d=Math.abs(norm(a-b));return Math.min(d,360-d);};
+  let best=null;
+  for(let s=180;s>=30&&!best;s--){need=base*kV(s)+FIT_MARGIN;
+    if(keepBeam){for(const b of [cur,cur+180]){const a1=b-Math.floor(s/2);if(ok(a1)&&ok(a1+s)&&(!best||dd(b,cur)<best.db))best={a1:norm(Math.round(a1)),s,db:dd(b,cur)};}}
+    else for(let a1=0;a1<360;a1++)if(ok(a1)&&ok(a1+s)){const b=a1+Math.floor(s/2),db=Math.min(dd(b,cur),dd(b+180,cur));if(!best||db<best.db)best={a1,s,db};}}
+  if(!best)return {err:`Ramię ma w rzucie ${reach.toFixed(1)} m, a działka od tego punktu ${keepBeam?'w tym kierunku ':''}nie ma tyle miejsca nawet przy kącie 30°.`+(keepBeam?' Spróbuj „najlepsze ułożenie” albo innego punktu zawieszenia.':' Wybierz inny punkt zawieszenia, odwrócone V albo wyższe pasmo.')};
+  p.arm1=best.a1;p.spread=best.s;return {ok:true,s:best.s,beam:beamOf('dipole')};}
 function mastLabel(m){const a=Object.keys(state.mastAssign).filter(k=>state.mastAssign[k]===m.id&&SITECFG.tabs.includes(k.split(':')[0])).map(k=>ANTNAME[k]);return m.id+(a.length?': '+a.join(', '):'');}
 function metalExtra(t,p){
-  const M=SITECFG.metal, m=mastFor(t,p); if(!state.metal||!M||!m)return null;
+  const M=SITECFG.metal, m=mastFor(t,p)||(t==='dipole'?{id:'C',pos:antPos(t,p)}:null); if(!state.metal||!M||!m)return null;
   const b=beamOf(t)*Math.PI/180,c=Math.cos(b),s=Math.sin(b);
   const toFrame=q=>{const x=q[0]-m.pos[0],y=q[1]-m.pos[1];return [x*c-y*s,x*s+y*c];};   // inverse of rotateSegs
   const wires=[];for(const o of M)wires.push(...wireBox(o.poly.map(toFrame),o.z0,o.z1,1.0));
-  return {wires,key:JSON.stringify([m.id,beamOf(t)])};}
-function nbFromMasts(){const m1=mastFor(state.tab,P[state.tab]),n=nbParse(state.nb.type),m2=n.tab?mastFor(n.tab,nbParams(state.nb.type)):null;
-  if(!m1||!m2)return false;const dx=m2.pos[0]-m1.pos[0],dy=m2.pos[1]-m1.pos[1];
+  return {wires,key:JSON.stringify([m.id,m.pos,beamOf(t)])};}
+const HAS_MASTS=!!(SITECFG.masts&&SITECFG.masts.length);
+// antennas computed together with the main one: on sites with masts every antenna assigned to a mast (positions from the plan), otherwise the one chosen by hand
+function nbList(t){const p=P[t];
+  if(HAS_MASTS){if(!state.nbAuto)return [];
+    const me=antKey(t,p), o=antPos(t,p)||[0,0], out=[];
+    for(const k of Object.keys(state.mastAssign)){const tab=k.split(':')[0];if(k===me||!SITECFG.tabs.includes(tab)||(tab===t&&t!=='y15'))continue;
+      const m=SITECFG.masts.find(x=>x.id===state.mastAssign[k]);if(!m)continue;
+      const dx=m.pos[0]-o[0],dy=m.pos[1]-o[1],dist=Math.hypot(dx,dy),brg=dist<0.05?0:(Math.atan2(dx,dy)*180/Math.PI+360)%360;
+      out.push({key:k,type:tab,p:nbParams(k),beam:beamOf(tab),dist:Math.round(dist*10)/10,brg:Math.round(brg),term:state.nb.term,name:ANTNAME[k],mast:m.id});}
+    return out;}
+  if(state.nb.type&&!nbSame(state.nb.type,t)){const nt=nbParse(state.nb.type).tab;return [{...state.nb,key:state.nb.type,type:nt,p:nbParams(state.nb.type),beam:beamOf(nt),name:nbName(state.nb.type)}];}
+  return [];}
+function nbFromMasts(){const m1=antPos(state.tab,P[state.tab]),n=nbParse(state.nb.type),m2=n.tab?antPos(n.tab,nbParams(state.nb.type)):null;
+  if(!m1||!m2||(!mastFor(state.tab,P[state.tab])&&!mastFor(n.tab,nbParams(state.nb.type))))return false;const dx=m2[0]-m1[0],dy=m2[1]-m1[1];
   state.nb.dist=Math.max(3,Math.round(Math.hypot(dx,dy)));state.nb.brg=Math.round((Math.atan2(dx,dy)*180/Math.PI+360)%360);
   $('nbDist').value=state.nb.dist;$('nbBrg').value=state.nb.brg;return true;}
-function beamOf(t){const p=P[t];if(t==='delta')return (p.orient+270)%360;if(t==='dipole')return (p.wireAz+270)%360;return p.beamAz;}
-function setBeamOf(t,b){b=norm(b);const p=P[t];if(t==='delta')p.orient=(b+90)%180;else if(t==='dipole')p.wireAz=(b+90)%180;else p.beamAz=b;}
+function beamOf(t){const p=P[t];if(t==='delta')return (p.orient+270)%360;if(t==='dipole')return norm(p.arm1+Math.floor(p.spread/2));return p.beamAz;}
+function setBeamOf(t,b){b=norm(b);const p=P[t];if(t==='delta')p.orient=(b+90)%180;else if(t==='dipole')p.arm1=norm(b-Math.floor(p.spread/2));else p.beamAz=b;}
 function buildAnt(){const t=state.tab,p=P[t];
-  if(t==='hex')return buildDipole({f:p.f,height:p.height,wireAz:(p.beamAz+90)%180,shape:'flat'});
+  if(t==='hex'||t==='quad')return buildDipole({f:p.f,height:p.height,wireAz:(p.beamAz+90)%180,shape:'flat'});
   if(t==='delta')return buildDelta({...p,vf:wireVF(p.f)});
   if(t==='dipole')return buildDipole({...p,vf:wireVF(p.f)});
   return buildYagi(p);}
@@ -1076,19 +1196,24 @@ function setupCanvas(c){const dpr=Math.min(2,window.devicePixelRatio||1);const w
   const ratio=c._base[1]/c._base[0]; const H=w*ratio;
   c.width=Math.round(w*dpr);c.height=Math.round(H*dpr);const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);return{x,w,h:H};}
 
+const cdiv=(k,Z)=>{const d=Z.R*Z.R+Z.X*Z.X;return {R:k*Z.R/d,X:-k*Z.X/d};};
+// Cubex manual, Table I: λ/4 of 75 Ω RG-11 (VF 0.66) on 10/12/15 m, 50 Ω directly on 17/20 m
+const QSTUB={'10':172.72,'12':202.74,'15':233.68};
+function quadStub(p){return p.match==='cubex'&&QSTUB[p.band]?{cm:QSTUB[p.band]}:null;}
+const DIRK=['yagi','hex','quad'];
 let recId=0, NECR=null, NBR=null, RNB=null;
 async function recompute(){
   const my=++recId, t=state.tab, p=P[t], o={f:p.f,ground:state.ground};
   NECR=null;
-  if((state.engine==='nec'||t==='hex')&&NEC.ok){
+  if((state.engine==='nec'||t==='hex'||t==='quad')&&NEC.ok){
     document.body.classList.add('busy');$('necHint').textContent='Liczę NEC-2…';
     NBR=null;
     const pc={...p,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r};
     const mx=metalExtra(t,p);
     try{NECR=await necAnalyze(t,pc,wireRadius(),GROUNDS[state.ground],mx);
-      if(state.nb.type&&!nbSame(state.nb.type,t)){const nt=nbParse(state.nb.type).tab;const nb={...state.nb,type:nt,p:nbParams(state.nb.type),beam:beamOf(nt)};
-        const r=await necAnalyzeNb(t,pc,wireRadius(),GROUNDS[state.ground],beamOf(t),nb,mx);
-        if(r.overlap)NBR={overlap:true,minD:r.minD};else{NBR={base:NECR};NECR=r;}}
+      const nbs=nbList(t);
+      if(nbs.length){const r=await necAnalyzeNb(t,pc,wireRadius(),GROUNDS[state.ground],beamOf(t),nbs,mx);
+        if(r.overlap)NBR={overlap:true,used:[],skipped:r.skipped};else{NBR={base:NECR,used:r.used,skipped:r.skipped};NECR=r;}}
     }catch(e){NECR=null;NBR=null;$('necHint').textContent='Błąd NEC-2: '+e.message+'. Pokazuję szybki model.';}
     if(NECR){try{NECR.fs=await necFreeSpace(t,pc,wireRadius(),NECR.scale||1);}catch(e){NECR.fs=null;}}
     if(my!==recId)return;
@@ -1100,7 +1225,8 @@ async function recompute(){
     if(inf.kind==='delta')Object.assign(ant,{Pbare:inf.Pe,vf,P:inf.Pe*vf});
     if(inf.kind==='dipole')Object.assign(ant,{Lbare:inf.Le,vf,Lphys:inf.Le*vf});
     const atuPre=(t==='dipole'&&p.feedSys==='atu')?lNetwork(NECR.Z,p.f,50,P.eatu.QL):null;
-    {const Z=NECR.Z, Zr=t==='delta'?50*(p.balun||1):50, gam=atuPre?0:Math.hypot(Z.R-Zr,Z.X)/Math.hypot(Z.R+Zr,Z.X);
+    NECR.stub=t==='quad'?quadStub(p):null; NECR.Zm=NECR.stub?cdiv(75*75,NECR.Z):null;
+    {const Z=NECR.Zm||NECR.Z, Zr=t==='delta'?50*(p.balun||1):50, gam=atuPre?0:Math.hypot(Z.R-Zr,Z.X)/Math.hypot(Z.R+Zr,Z.X);
      NECR.coax=coaxLoss(state.coax.type,p.f,state.coax.len,Math.min(0.999,gam));}
     const TT=terrainWithBuildings();
     const St=compute(ant,o,TT,false), Sf=compute(ant,o,TT,true), loss=(p.lossDb||0)+(atuPre?atuPre.lossDb:0)+NECR.coax.TL;
@@ -1110,11 +1236,11 @@ async function recompute(){
     RNB=null;
     if(NBR&&NBR.base){const B=NBR.base, Sb=compute({...ant,segs:rotateSegs(B.segs,beam),zc:B.zc},o,TT,false), Sbf=compute({...ant,segs:rotateSegs(B.segs,beam),zc:B.zc},o,TT,true);
       RNB={AZ:St.AZ,EL:St.EL,G:St.AZ.map((az,i)=>St.EL.map((el,j)=>Math.max(-60,necGain(B,az-beam,el)-loss+Math.max(-30,Math.min(12,Sb.G[i][j]-Sbf.G[i][j])))))};}
-    const Z=NECR.Z, Zref=t==='delta'?50*(p.balun||1):50, rho=Math.hypot(Z.R-Zref,Z.X)/Math.hypot(Z.R+Zref,Z.X);
+    const Z=NECR.Zm||NECR.Z, Zref=t==='delta'?50*(p.balun||1):50, rho=Math.hypot(Z.R-Zref,Z.X)/Math.hypot(Z.R+Zref,Z.X);
     NECR.zref=Zref; NECR.swr=(1+rho)/(1-rho); NECR.atu=null;
     if(t==='dipole'&&p.feedSys==='atu'){NECR.atu=lNetwork(Z,p.f,50,P.eatu.QL);NECR.swrAnt=NECR.swr;NECR.swr=NECR.atu?1.0:NECR.swr;}
     FSP=null;
-    if(inf.kind==='yagi'||inf.kind==='hex'){let best={g:-99,el:10};for(let el=1;el<=60;el++){const g=necGain(NECR,0,el);if(g>best.g)best={g,el};}
+    if(DIRK.includes(inf.kind)){let best={g:-99,el:10};for(let el=1;el<=60;el++){const g=necGain(NECR,0,el);if(g>best.g)best={g,el};}
       let back=-99;for(let a=120;a<=240;a+=5)back=Math.max(back,necGain(NECR,a,best.el));FSP={D:best.g-loss,FR:best.g-back,el:best.el,nec:true};}
     $('necHint').textContent='NEC-2 (nec2c), grunt Sommerfelda-Nortona. Teren dodany jako poprawka do charakterystyki NEC.';
   } else {
@@ -1137,7 +1263,7 @@ function fmt(v,d=1){if(Math.abs(v)<0.5*Math.pow(10,-d))return (0).toFixed(d);ret
 function fmtS(v,d=1){if(Math.abs(v)<0.5*Math.pow(10,-d))return (0).toFixed(d);return (v<0?'−':'')+Math.abs(v).toFixed(d);}
 function draw(){
   const g=RT.geo, t=state.tab, p=P[t];
-  $('h1t').textContent=TABNAME[t]; $('eyebrow').textContent='Symulacja anteny na działce · '+(t==='delta'||t==='dipole'?(bandName(p.f)+', rezonans '+p.f.toFixed(3)+' MHz'):t==='y15'?'15 m, '+p.design.replace('el',' el.'):t==='a3s'?p.band+' m, 3 el. z trapami':t==='hex'?p.band+' m, G3TXQ / SP7IDX':'10 m, 5 el.');
+  $('h1t').textContent=TABNAME[t]; $('eyebrow').textContent='Symulacja anteny na działce · '+(t==='delta'||t==='dipole'?(bandName(p.f)+', rezonans '+p.f.toFixed(3)+' MHz'):t==='y15'?'15 m, '+p.design.replace('el',' el.'):t==='a3s'?p.band+' m, 3 el. z trapami':t==='hex'?p.band+' m, G3TXQ / SP7IDX':t==='quad'?p.band+' m, quad 3 el.':'10 m, 5 el.');
   if(document.activeElement!==$('selAz'))$('selAz').value=state.sel;
   $('elO').textContent=state.el+'°';
   const beam=beamOf(t), lam=299.8/p.f;
@@ -1155,15 +1281,29 @@ function draw(){
   $('coaxLenO').textContent=state.coax.len+' m';
   $('coaxHint').textContent='Tłumienie '+COAX[state.coax.type].src+'. Wykresy uwzględniają straty w kablu (także od niedopasowania). W wariantach dipola bez baluna długość kabla to też długość ekranu, po którym płynie prąd wspólny.';
   $('wireBox').hidden=!(t==='delta'||t==='dipole');
+  $('nbBox').hidden=HAS_MASTS;$('nbAutoBox').hidden=!HAS_MASTS;
+  [...$('nbTerm').children,...$('nbTerm2').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===state.nb.term));$('nbAuto').checked=state.nbAuto;
+  const nbEff=()=>{const el=state.el,b=beamOf(t);return {el,b,d:gAt(RT,b,el)-gAt(RNB,b,el)};};
+  const nbDesc=n=>`${n.name} (${n.mast?n.mast+', ':''}${n.dist<0.05?'ten sam maszt':n.dist.toFixed(n.dist<10?1:0)+' m na '+n.brg+'°'})`;
+  if(HAS_MASTS){const h=$('nbAutoHint'),L=nbList(t);h.classList.remove('err');$('nbTerm2').hidden=!state.nbAuto||!L.length;
+    if(!state.nbAuto)h.textContent='Wyłączone: liczona jest sama antena z tej zakładki.';
+    else if(!L.length)h.textContent='Na pozostałych masztach nie ma przypisanych anten. Przypisz je w polu „Maszt tej anteny” na ich zakładkach.';
+    else if(state.engine!=='nec'||!NEC.ok){h.classList.add('err');h.textContent='Wpływ pozostałych anten liczy tylko NEC-2. Przełącz obliczenia na NEC-2.';}
+    else if(NBR){const sk=(NBR.skipped||[]).map(n=>nbDesc(n)+': druty bliżej niż 0,5 m od tej anteny, pominięta'+(n.dist<0.05?'. Rozsuń anteny na maszcie w pionie suwakiem wysokości.':'.'));
+      const us=(NBR.used||[]).map(nbDesc);
+      h.classList.toggle('err',!!sk.length);
+      h.textContent=(us.length?'W NEC razem z: '+us.join('; ')+'. ':'')+(sk.length?sk.join(' ')+' ':'')+(RNB?(()=>{const e=nbEff();return `W kierunku wiązki ${e.b}° przy ${e.el}°: ${fmt(e.d)} dB względem pracy bez nich. `;})():'')+'Wysokość, pasmo i kierunek każdej anteny bierzemy z jej zakładki. Liczone na częstotliwości anteny głównej.';}
+  } else {
   [...$('nbType').options].forEach(o=>o.disabled=!!o.value&&(nbSame(o.value,t)||!SITECFG.tabs.includes(nbParse(o.value).tab)));
   $('nbCtl').hidden=!state.nb.type||nbSame(state.nb.type,t);
-  {const n=nbParse(state.nb.type);$('nbFromPlan').hidden=!(n.tab&&mastFor(t,p)&&mastFor(n.tab,nbParams(state.nb.type)));} $('nbDistO').textContent=state.nb.dist+' m';
+  $('nbFromPlan').hidden=true; $('nbDistO').textContent=state.nb.dist+' m';
   {const h=$('nbHint');h.classList.remove('err');
    if(!state.nb.type||nbSame(state.nb.type,t))h.textContent='Wysokość, pasmo i kierunek drugiej anteny bierzemy z jej zakładki. Liczy tylko NEC-2, na częstotliwości anteny głównej.';
    else if(state.engine!=='nec'||!NEC.ok){h.classList.add('err');h.textContent='Wpływ drugiej anteny liczy tylko NEC-2. Przełącz obliczenia na NEC-2.';}
-   else if(NBR&&NBR.overlap){h.classList.add('err');h.textContent='Druty obu anten przechodzą bliżej niż 0,5 m od siebie ('+NBR.minD.toFixed(2)+' m). Jeśli stoją na tym samym maszcie, rozsuń je w pionie suwakiem wysokości, albo zmień odległość lub kierunek.';}
-   else if(RNB){const el=state.el,b=beamOf(t),d=gAt(RT,b,el)-gAt(RNB,b,el);
-     h.textContent=nbName(state.nb.type)+' '+state.nb.dist+' m na '+state.nb.brg+'° ('+(state.nb.term==='50'?'podłączona':'rozwarta')+'). W kierunku wiązki '+b+'° przy '+el+'°: '+fmt(d)+' dB względem pracy bez niej.';}}
+   else if(NBR&&NBR.overlap){h.classList.add('err');h.textContent='Druty obu anten przechodzą bliżej niż 0,5 m od siebie ('+NBR.skipped[0].minD.toFixed(2)+' m). Zmień odległość, kierunek albo wysokość.';}
+   else if(RNB){const e=nbEff();
+     h.textContent=nbName(state.nb.type)+' '+state.nb.dist+' m na '+state.nb.brg+'° ('+(state.nb.term==='50'?'podłączona':'rozwarta')+'). W kierunku wiązki '+e.b+'° przy '+e.el+'°: '+fmt(e.d)+' dB względem pracy bez niej.';}}
+  }
   if(t==='delta'||t==='dipole'){const vf=wireVF(p.f);if(document.activeElement!==$('wVf'))$('wVf').value=vf.toFixed(3);
     $('wireHint').textContent=state.wire==='CUSTOM'?'Własny współczynnik, np. zmierzony na Twojej antenie.':state.wire==='BARE'?'Bez izolacji: długość jak ze wzoru.':
       'Współczynnik liczony z geometrii izolacji dla '+p.f.toFixed(3)+' MHz. Producent go nie podaje. Zostaw 3–5% zapasu i dotnij analizatorem.';}
@@ -1181,12 +1321,31 @@ function draw(){
   } else if(t==='dipole'){
     $('pFeedHint').textContent=p.feedSys==='balun11'?'Balun prądowy 1:1 w punkcie zasilania: ekran kabla nie promieniuje.':p.feedSys==='atu'?'eATU przy antenie dopasowuje impedancję, SWR na kablu ≈ 1. Bez baluna ekran kabla (model: 15 m w dół i po ziemi, za anteną) niesie prąd wspólny i promieniuje.':'Kabel 50 Ω wprost do dipola. Ekran kabla (model: 15 m w dół i po ziemi, za anteną) niesie prąd wspólny i promieniuje.';
     [...$('pFeedSys').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.feedSys));
-    $('pHeightO').textContent=p.height.toFixed(1)+' m';$('pWireO').textContent=p.wireAz+'° / '+(p.wireAz+180)+'°';$('pWire').value=p.wireAz;syncAz('p');
-    const b1=(p.wireAz+90)%360,b2=(p.wireAz+270)%360;
-    $('pHint').textContent='Drut w linii '+p.wireAz+'°–'+(p.wireAz+180)+'°. Maksima na '+Math.min(b1,b2)+'° i '+Math.max(b1,b2)+'°.';
+    $('pHeightO').textContent=p.height.toFixed(1)+' m';$('pWireO').textContent=beam+'°';$('pWire').value=beam;syncAz('p');
+    const a2=norm(p.arm1+p.spread);$('pSpreadO').textContent=p.spread+'°'+(p.spread===180?' (prosty)':'');$('pSpread').value=p.spread;
+    if(document.activeElement!==$('pA1'))$('pA1').value=p.arm1;if(document.activeElement!==$('pA2'))$('pA2').value=a2;
+    const hasM=!!mastFor('dipole',p);$('pCx').disabled=$('pCy').disabled=hasM;
+    if(document.activeElement!==$('pCx'))$('pCx').value=(hasM?mastFor('dipole',p).pos[0]:p.cx).toFixed(1);if(document.activeElement!==$('pCy'))$('pCy').value=(hasM?mastFor('dipole',p).pos[1]:p.cy).toFixed(1);
+    $('pHint').textContent=p.spread===180?'Drut w linii '+p.arm1+'°–'+a2+'°. Maksima na '+beam+'° i '+norm(beam+180)+'°.':'Ramiona na '+p.arm1+'° i '+a2+'°, V otwarte na '+beam+'°. Maksima w przybliżeniu na '+beam+'° i '+norm(beam+180)+'°; im mniejszy kąt, tym charakterystyka bardziej dookólna.';
+    const L=dipoleLayout(g), Pg=SITECFG.parcel;
+    const where=hasM?'z masztu '+mastFor('dipole',p).id:'ze środka ('+(p.cx>=0?'+':'')+p.cx.toFixed(1)+' E, '+(p.cy>=0?'+':'')+p.cy.toFixed(1)+' N od środka działki)';
+    let fitTxt='Ramię w rzucie z góry: '+L.reach.toFixed(1)+' m '+where+'.';
+    if(Pg){const bad=L.arms.filter(r=>!r.inside||r.ray<L.reach);
+      fitTxt+=!L.centerIn?' Środek dipola jest poza działką.':bad.length?' '+bad.map((r,k)=>`${k?'ramię':'Ramię'} ${r.i} wychodzi poza działkę o ${(L.reach-r.ray).toFixed(1)} m`).join(', ')+'.':' Oba ramiona mieszczą się w działce (zapas '+Math.min(...L.arms.map(r=>r.ray-L.reach)).toFixed(1)+' m wzdłuż ramion).';}
+    $('pFitHint').textContent=(state.fitMsg?state.fitMsg+' ':'')+fitTxt;$('pFitHint').classList.toggle('err',!!(Pg&&(!L.centerIn||L.arms.some(r=>!r.inside||r.ray<L.reach))));
+    $('pFitA').hidden=$('pFitB').hidden=!Pg;
     geoHtml=`<span>rezonans</span><b>${p.f.toFixed(3)} MHz</b><span>${g.nec?'długość el. (NEC, X=0)':'goły drut (143/f)'}</span><b>${g.Lbare.toFixed(2)} m</b><span>skrócenie izolacji</span><b>× ${g.vf.toFixed(3)}</b><span>długość do cięcia</span><b>${g.Lphys.toFixed(2)} m</b><span>ramię ×2</span><b>${(g.Lphys/2).toFixed(2)} m</b><span>wysokość środka</span><b>${p.height.toFixed(1)} m</b><span>wysokość w λ</span><b>${(p.height/lam).toFixed(2)} λ</b>`+
-      (p.shape==='invv'?`<span>końce na</span><b>${g.endH.toFixed(1)} m</b><span>kąt między ramionami</span><b>${(180-2*g.droop).toFixed(0)}°</b>`:'');
+      (p.shape==='invv'?`<span>końce na</span><b>${g.endH.toFixed(1)} m</b><span>kąt odwróconego V (w pionie)</span><b>${(180-2*g.droop).toFixed(0)}°</b>`:'')+
+      `<span>kąt ramion z góry</span><b>${p.spread}°${p.spread===180?' (prosty)':''}</b>`+
+      L.arms.map(r=>`<span>ramię ${r.i}: azymut, zasięg</span><b>${r.az}° · ${r.reach.toFixed(1)} m</b>`+(Pg&&isFinite(r.ray)?`<span>ramię ${r.i}: do granicy działki</span><b${r.ray<r.reach?' style="color:var(--warn)"':''}>${r.ray.toFixed(1)} m${r.ray<r.reach?' (brakuje '+(r.reach-r.ray).toFixed(1)+' m)':''}</b>`:'')).join('');
     note=p.height/lam<0.3?'Dipol niżej niż ok. 0,3 λ promieniuje głównie w górę (NVIS). To dobre na bliską Europę, słabe na DX. Na DX potrzeba zwykle 0,5 λ lub więcej.':'Poziomy dipol promieniuje prostopadle do drutu. Im wyżej w długościach fali, tym niższy kąt głównej wiązki.';
+  } else if(t==='quad'){
+    $('qHeightO').textContent=p.height.toFixed(1)+' m';$('qRangeO').textContent=p.beamAz+'°';$('qRange').value=p.beamAz;syncAz('q');
+    [...$('qBand').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.band));[...$('qMatch').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.match));
+    $('qMulti').checked=!!p.multi;$('qTune').checked=!!p.tune;
+    $('qMatchHint').textContent=p.match==='cubex'?(QSTUB[p.band]?`Na ${p.band} m instrukcja daje ćwierćfalowy transformator z kabla 75 Ω RG-11: ${QSTUB[p.band]} cm (VF 0,66), dalej dowolny kabel 50 Ω. SWR liczę za transformatorem.`:`Na ${p.band} m instrukcja każe podłączyć kabel 50 Ω wprost.`):'Kabel 50 Ω prosto do pętli, bez transformatora.';
+    geoHtml=g.kind==='quad'?`<span>pasmo / częstotliwość</span><b>${p.band} m · ${p.f.toFixed(3)} MHz</b><span>reflektor: bok · obwód</span><b>${g.side.r.toFixed(3)} m · ${(4*g.side.r).toFixed(2)} m</b><span>driver${p.tune?' (dostrojony)':''}: bok · obwód</span><b>${g.side.d.toFixed(3)} m · ${(4*g.side.d).toFixed(2)} m</b><span>direktor: bok · obwód</span><b>${g.side.dir.toFixed(3)} m · ${(4*g.side.dir).toFixed(2)} m</b><span>rozstaw R–DE · DE–D</span><b>3,05 m · 2,44 m</b><span>boom</span><b>${g.boom.toFixed(2)} m</b><span>dolny drut tego pasma</span><b>${g.bottom.toFixed(2)} m</b>`+(g.multi&&p.band!=='20'?`<span>dolny drut 20 m</span><b>${g.bottomAll.toFixed(2)} m</b>`:'')+`<span>wysokość boomu w λ</span><b>${(p.height/lam).toFixed(2)} λ</b>`+(FSP?`<span>zysk maks. nad gruntem</span><b>${FSP.D.toFixed(1)} dBi</b><span>F/R przy ${FSP.el}°</span><b>${FSP.FR.toFixed(0)} dB</b>`:''):'';
+    note='Cubex SkyMaster III: 3 elementy na 5 pasm, wymiary boków z tabeli IIb instrukcji Cubex, elementy w 0, 10 i 18 ft boomu, drut Ø 1,6 mm (AWG 14, średnicy instrukcja nie podaje). '+(p.multi?'Liczę pełny zestaw 15 pętli: pętle tego pasma pracują, pętle pozostałych pasm są w modelu obecne (drivery zamknięte 50 Ω, jak przy osobnych kablach albo przełączniku antenowym), więc wzajemny wpływ pasm jest uwzględniony. ':'Liczę tylko pętle wybranego pasma, bez pozostałych. ')+'Instrukcja podaje impedancje ok. 50 Ω na 20 m, 75 Ω na 15 m i 110 Ω na 10 m; NEC liczy dla tych wymiarów trochę inne wartości, bo zależą od drutu, końcówek i wysokości. Opcja 6 m nie jest liczona, bo instrukcja nie podaje jej wymiarów. Boom i maszt są pominięte.';
   } else if(t==='hex'){
     $('hHeightO').textContent=p.height.toFixed(1)+' m';$('hRangeO').textContent=p.beamAz+'°';$('hRange').value=p.beamAz;syncAz('h');
     [...$('hBand').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.band));
@@ -1200,9 +1359,9 @@ function draw(){
       `<span>boom</span><b>${g.boom.toFixed(2)} m</b><span>wysokość w λ</span><b>${(p.height/lam).toFixed(2)} λ</b><span>${FSP.nec?'zysk maks. nad gruntem':'zysk w wolnej przestrzeni'}</span><b>${FSP.D.toFixed(1)} dBi</b><span>F/R${FSP.nec?' przy '+FSP.el+'°':''}</span><b>${FSP.FR.toFixed(0)} dB</b>`;
     note=t==='a3s'?'A3S ma na każdym paśmie 3 elementy na krótkim boomie (0,2 λ na 20 m, 0,4 λ na 10 m). W NEC elementy są modelowane jako pełnowymiarowe odpowiedniki (długości w panelu są elektryczne), bo trapów producenta nie znamy. Fizyczne elementy A3S są krótsze dzięki trapom. Przyjęto 0,5 dB strat w trapach, rozstaw elementów przybliżony.':'Wymiary elementów dobrane w NEC-2 dla rurek Ø 20 mm (15 m) i Ø 16 mm (10 m), bez strat w materiale i bez układu dopasowania (hairpin, gamma). Przed cięciem uwzględnij mocowania elementów do boomu, które zmieniają ich długość elektryczną. Kąt głównej wiązki zależy od wysokości: przy 1 λ to ok. 14°, przy 0,5 λ ok. 27°.';
   }
-  if(NECR&&NECR.fs){const fg=(['yagi','hex'].includes(g.kind)?NECR.fs.fwd:NECR.fs.max)-(p.lossDb||0);geoHtml+=`<span>zysk katalogowy (wolna przestrzeń)</span><b>${fg.toFixed(2)} dBi · ${(fg-2.15).toFixed(2)} dBd</b>`;}
-  if(NECR){const Z=NECR.Z;const cx=NECR.coax;geoHtml+=`<span>impedancja (NEC)</span><b>${Z.R.toFixed(1)} ${Z.X<0?'−':'+'} j${Math.abs(Z.X).toFixed(1)} Ω</b>${NECR.atu?`<span>SWR na kablu (po eATU)</span><b>≈ 1.0</b><span>eATU: L szeregowa</span><b>${NECR.atu.L.toFixed(2)} µH</b><span>eATU: C równoległa (${NECR.atu.side==='antenna'?'od strony anteny':'od strony TRX'})</span><b>${NECR.atu.C.toFixed(0)} pF</b><span>straty w eATU (Q cewki ${P.eatu.QL})</span><b>${NECR.atu.lossDb.toFixed(2)} dB</b>`:`<span>SWR przy ${NECR.zref} Ω${NECR.zref!==50?' (za balunem '+(NECR.zref/50)+':1 → 50 Ω)':''}</span><b>${NECR.swr.toFixed(2)}</b>`}`+(NECR.pat.eff?`<span>sprawność (straty w gruncie)</span><b>${(NECR.pat.eff*100).toFixed(0)} % · ${(10*Math.log10(NECR.pat.eff)).toFixed(1)} dB</b>`:'')+(cx?`<span>${cx.name} ${state.coax.len} m: tłumienie</span><b>${cx.ML.toFixed(2)} dB</b><span>straty kabla z niedopasowaniem</span><b>${cx.TL.toFixed(2)} dB</b><span>SWR przy radiu</span><b>${cx.swrIn.toFixed(2)}</b>`:'');}
-  {const low=g.kind==='delta'?g.bottom:g.kind==='dipole'?g.endH:g.height, hl=(g.kind==='delta'?(g.bottom+g.apex)/2:g.height)/lam;
+  if(NECR&&NECR.fs){const fg=(DIRK.includes(g.kind)?NECR.fs.fwd:NECR.fs.max)-(p.lossDb||0);geoHtml+=`<span>zysk katalogowy (wolna przestrzeń)</span><b>${fg.toFixed(2)} dBi · ${(fg-2.15).toFixed(2)} dBd</b>`;}
+  if(NECR){const Z=NECR.Z;const cx=NECR.coax;geoHtml+=`<span>impedancja (NEC)</span><b>${Z.R.toFixed(1)} ${Z.X<0?'−':'+'} j${Math.abs(Z.X).toFixed(1)} Ω</b>${NECR.Zm?`<span>za λ/4 RG-11 (${NECR.stub.cm.toFixed(0)} cm)</span><b>${NECR.Zm.R.toFixed(1)} ${NECR.Zm.X<0?'−':'+'} j${Math.abs(NECR.Zm.X).toFixed(1)} Ω</b>`:''}${NECR.atu?`<span>SWR na kablu (po eATU)</span><b>≈ 1.0</b><span>eATU: L szeregowa</span><b>${NECR.atu.L.toFixed(2)} µH</b><span>eATU: C równoległa (${NECR.atu.side==='antenna'?'od strony anteny':'od strony TRX'})</span><b>${NECR.atu.C.toFixed(0)} pF</b><span>straty w eATU (Q cewki ${P.eatu.QL})</span><b>${NECR.atu.lossDb.toFixed(2)} dB</b>`:`<span>SWR przy ${NECR.zref} Ω${NECR.zref!==50?' (za balunem '+(NECR.zref/50)+':1 → 50 Ω)':''}</span><b>${NECR.swr.toFixed(2)}</b>`}`+(NECR.pat.eff?`<span>sprawność (straty w gruncie)</span><b>${(NECR.pat.eff*100).toFixed(0)} % · ${(10*Math.log10(NECR.pat.eff)).toFixed(1)} dB</b>`:'')+(cx?`<span>${cx.name} ${state.coax.len} m: tłumienie</span><b>${cx.ML.toFixed(2)} dB</b><span>straty kabla z niedopasowaniem</span><b>${cx.TL.toFixed(2)} dB</b><span>SWR przy radiu</span><b>${cx.swrIn.toFixed(2)}</b>`:'');}
+  {const low=g.kind==='delta'||g.kind==='quad'?g.bottom:g.kind==='dipole'?g.endH:g.height, hl=(g.kind==='delta'?(g.bottom+g.apex)/2:g.height)/lam;
    if(low<2.5||hl<0.1)geoHtml+=g.nec?`<span style="grid-column:1/3;color:var(--warn)">Antena bardzo nisko (${hl.toFixed(2)} λ). NEC-2 liczy straty w gruncie, ale poprawka od nierówności terenu jest przy takiej wysokości niepewna.</span>`:`<span style="grid-column:1/3;color:var(--warn)">Antena bardzo nisko (${hl.toFixed(2)} λ). Szybki model nie liczy strat w gruncie, więc zysk jest wyraźnie zawyżony. Przełącz na NEC-2.</span>`;}
   $('geo').innerHTML=geoHtml; $('antNote').textContent=note;
   drawSketch();
@@ -1212,8 +1371,8 @@ function draw(){
     ['Maksimum', fmtS(st.best.g)+' dBi', `az ${st.best.az}°, elewacja ${st.best.el}°`],
     ['Moc do nieba poniżej 20°', (st.low*100).toFixed(0)+' %', `nad płaskim gruntem ${(sf.low*100).toFixed(0)} %`],
     [`Wybrany kierunek ${state.sel}° przy ${state.el}°`, fmtS(selT)+' dBi', `rzeźba terenu: ${fmt(selT-selF)} dB`]
-  ].concat(NECR&&NECR.fs?[['Zysk katalogowy (wolna przestrzeń)',fmtS((['yagi','hex'].includes(RT.geo.kind)?NECR.fs.fwd:NECR.fs.max)-(p.lossDb||0))+' dBi',`${fmtS((['yagi','hex'].includes(RT.geo.kind)?NECR.fs.fwd:NECR.fs.max)-(p.lossDb||0)-2.15)} dBd`+(NECR.fs.fb!=null&&['yagi','hex'].includes(RT.geo.kind)?`, F/B ${NECR.fs.fb.toFixed(0)} dB`:'')+` · nad gruntem z kablem maks. ${fmtS(st.best.g)} dBi`]]:[])
-   .concat(RNB?[['Wpływ drugiej anteny',fmt(gAt(RT,beamOf(t),state.el)-gAt(RNB,beamOf(t),state.el))+' dB',`wiązka ${beamOf(t)}° przy ${state.el}°, najgorzej ${fmt(Math.min(...[5,10,15,20].map(e=>gAt(RT,beamOf(t),e)-gAt(RNB,beamOf(t),e))))} dB (5–20°)`]]:[])
+  ].concat(NECR&&NECR.fs?[['Zysk katalogowy (wolna przestrzeń)',fmtS((DIRK.includes(RT.geo.kind)?NECR.fs.fwd:NECR.fs.max)-(p.lossDb||0))+' dBi',`${fmtS((DIRK.includes(RT.geo.kind)?NECR.fs.fwd:NECR.fs.max)-(p.lossDb||0)-2.15)} dBd`+(NECR.fs.fb!=null&&DIRK.includes(RT.geo.kind)?`, F/B ${NECR.fs.fb.toFixed(0)} dB`:'')+` · nad gruntem z kablem maks. ${fmtS(st.best.g)} dBi`]]:[])
+   .concat(RNB?[[HAS_MASTS?'Wpływ pozostałych anten':'Wpływ drugiej anteny',fmt(gAt(RT,beamOf(t),state.el)-gAt(RNB,beamOf(t),state.el))+' dB',`wiązka ${beamOf(t)}° przy ${state.el}°, najgorzej ${fmt(Math.min(...[5,10,15,20].map(e=>gAt(RT,beamOf(t),e)-gAt(RNB,beamOf(t),e))))} dB (5–20°)`]]:[])
    .concat(NECR&&NECR.coax?[['Straty w kablu',fmtS(-NECR.coax.TL,2)+' dB',`${NECR.coax.name}, ${state.coax.len} m, SWR przy radiu ${NECR.coax.swrIn.toFixed(2)}`]]:[])
    .concat(NECR&&NECR.pat.eff?[['Straty w gruncie', fmtS(10*Math.log10(NECR.pat.eff))+' dB', `sprawność ${(NECR.pat.eff*100).toFixed(0)} %, ${NECR.atu?'eATU: SWR ≈ 1, straty '+NECR.atu.lossDb.toFixed(2)+' dB':'SWR '+NECR.swr.toFixed(2)+(NECR.zref!==50?' (balun '+(NECR.zref/50)+':1)':' (50 Ω)')}`]]:[])
    .concat(FSP?[['Przód / tył (F/R)', FSP.FR.toFixed(0)+' dB', FSP.nec?`przy ${FSP.el}° elewacji, nad gruntem`:`wolna przestrzeń, zysk ${FSP.D.toFixed(1)} dBi`]]:[]).map(k=>`<div class="kpi"><div class="t">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join('');
@@ -1237,6 +1396,20 @@ function drawSketch(){
     lab(p.beamAz+'°',w-4,12,'right');lab('widok z góry',4,12);
     return;
   }
+  if(g.kind==='quad'){ // side view: mast, boom, three loops of this band (other bands faint)
+    const oy=h-14, top=2*g.height-g.bottomAll+0.5, sc=Math.min((w-60)/(g.boom+2),(h-24)/Math.max(top,6)), ox=w/2-g.boom*sc/2+ (0.152+0)*0;
+    const Y=z=>oy-z*sc, X=y=>w/2+(y-(g.boom/2-2.59))*sc;
+    x.strokeStyle=css('--line');x.lineWidth=1;x.beginPath();x.moveTo(8,oy);x.lineTo(w-8,oy);x.stroke();
+    x.strokeStyle=css('--terrain-line');x.lineWidth=2;x.beginPath();x.moveTo(X(0),oy);x.lineTo(X(0),Y(g.height));x.stroke();
+    x.strokeStyle=css('--line');x.lineWidth=3;x.beginPath();x.moveTo(X(-2.59),Y(g.height));x.lineTo(X(g.boom-2.59),Y(g.height));x.stroke();
+    const ys=[-2.59,3.048-2.59,g.boom-2.59];
+    if(g.multi){x.strokeStyle=css('--grid');x.lineWidth=1.2;for(const b in QUAD){if(b===p.band)continue;const Q=QUAD[b];[Q.r,Q.d,Q.dir].forEach((sd,i)=>{const hh=sd*0.0254/2;x.beginPath();x.moveTo(X(ys[i])+(i-1)*1.5,Y(g.height-hh));x.lineTo(X(ys[i])+(i-1)*1.5,Y(g.height+hh));x.stroke();});}}
+    x.strokeStyle=css('--accent');x.lineWidth=2.4;[g.side.r,g.side.d,g.side.dir].forEach((sd,i)=>{x.beginPath();x.moveTo(X(ys[i]),Y(g.height-sd/2));x.lineTo(X(ys[i]),Y(g.height+sd/2));x.stroke();});
+    dot(X(ys[1]),Y(g.height-g.side.d/2));lab('R',X(ys[0])-4,Y(g.height+g.side.r/2)-4,'center');lab('DE',X(ys[1]),Y(g.height+g.side.d/2)-4,'center');lab('D',X(ys[2])+4,Y(g.height+g.side.dir/2)-4,'center');
+    x.strokeStyle=css('--ink');x.lineWidth=1.5;const ex=X(ys[2])+10,ey=Y(g.height);x.beginPath();x.moveTo(ex,ey);x.lineTo(ex+14,ey);x.lineTo(ex+9,ey-4);x.moveTo(ex+14,ey);x.lineTo(ex+9,ey+4);x.stroke();
+    lab('widok z boku',4,12);lab(p.beamAz+'°',w-4,12,'right');
+    return;
+  }
   if(g.kind==='yagi'){ // top view
     const lam=g.lam, boom=g.boom, maxL=g.des[0][1]*lam;
     const sc=Math.min((w-50)/boom,(h-30)/maxL), ox=26, oy=h/2;
@@ -1250,6 +1423,16 @@ function drawSketch(){
   }
   const oy=h-14;
   x.strokeStyle=css('--line');x.lineWidth=1;x.beginPath();x.moveTo(8,oy);x.lineTo(w-8,oy);x.stroke();
+  if(t==='dipole'&&p.spread<180){ // top view of a bent dipole, main beam up
+    const reach=g.Lphys/2*Math.cos(g.droop*RAD), s2=p.spread/2*RAD, spanX=2*reach*Math.sin(s2), spanY=reach*Math.cos(s2);
+    const sc=Math.min((w-120)/Math.max(spanX,1),(h-40)/Math.max(spanY,reach*0.25)), ox=w/2, oy0=h-12;
+    const E1=[ox-reach*sc*Math.sin(s2),oy0-reach*sc*Math.cos(s2)], E2=[ox+reach*sc*Math.sin(s2),oy0-reach*sc*Math.cos(s2)];
+    x.clearRect(0,0,w,h);x.strokeStyle=css('--accent');x.lineWidth=2;x.beginPath();x.moveTo(...E1);x.lineTo(ox,oy0);x.lineTo(...E2);x.stroke();
+    x.strokeStyle=css('--terrain-line');x.lineWidth=1;x.setLineDash([3,3]);x.beginPath();x.moveTo(ox,oy0-26);x.lineTo(ox,Math.max(22,Math.min(E1[1],oy0-40)));x.stroke();x.setLineDash([]);
+    dot(ox,oy0);lab('1: '+p.arm1+'°',E1[0]-6,E1[1]+10,'right');lab('2: '+norm(p.arm1+p.spread)+'°',E2[0]+6,E2[1]+10,'left');
+    lab(p.spread+'°',ox,oy0-14,'center');lab('widok z góry, wiązka ↑ '+beamOf('dipole')+'°',4,12);if(p.shape==='invv')lab('końce '+g.endH.toFixed(1)+' m',w-4,12,'right');
+    return;
+  }
   if(t==='dipole'){
     const half=g.Lphys/2, dx=half*Math.cos(g.droop*Math.PI/180);
     const sc=Math.min((w-30)/(2*dx),(h-24)/Math.max(p.height+1,6)), ox=w/2;
@@ -1367,10 +1550,15 @@ function drawPlan(){
   for(const b of BLD){const col=cmap(Math.min(1,b.H/hmax)*0.85+0.1);x.fillStyle=`rgba(${col.map(Math.round).join(',')},${state.bld?0.9:0.3})`;
     x.beginPath();b.poly.forEach((p,i)=>i?x.lineTo(X(p[0]),Y(p[1])):x.moveTo(X(p[0]),Y(p[1])));x.closePath();x.fill();}
   const ray=(az,col,dash,wd)=>{const t=az*Math.PI/180;x.strokeStyle=col;x.setLineDash(dash);x.lineWidth=wd;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Rm*sc*Math.sin(t),cy-Rm*sc*Math.cos(t));x.stroke();x.setLineDash([]);};
-  const beam=beamOf(state.tab), am=mastFor(state.tab,P[state.tab]), ox0=am?X(am.pos[0]):cx, oy0=am?Y(am.pos[1]):cy;
+  const beam=beamOf(state.tab), am=mastFor(state.tab,P[state.tab]), ap=antPos(state.tab,P[state.tab])||[0,0], ox0=X(ap[0]), oy0=Y(ap[1]);
   const ray2=(az,col,dash,wd)=>{const t=az*Math.PI/180;x.strokeStyle=col;x.setLineDash(dash);x.lineWidth=wd;x.beginPath();x.moveTo(ox0,oy0);x.lineTo(ox0+Rm*sc*Math.sin(t),oy0-Rm*sc*Math.cos(t));x.stroke();x.setLineDash([]);};
-  ray2(beam,css('--accent'),[],2.5);if(state.tab==='delta'||state.tab==='dipole')ray2(beam+180,css('--accent'),[],1.2);
+  if(state.tab==='dipole'){ray2(beam,css('--accent'),[7,5],1.6);ray2(beam+180,css('--accent'),[7,5],1.2);}else{ray2(beam,css('--accent'),[],2.5);if(state.tab==='delta')ray2(beam+180,css('--accent'),[],1.2);}
   ray(state.sel,css('--warn'),[4,4],1.5);
+  if(state.tab==='dipole'&&RT.geo.kind==='dipole'){const L=dipoleLayout(RT.geo);x.lineCap='round';
+    for(const r of L.arms){const bad=SITECFG.parcel&&(!r.inside||r.ray<r.reach);x.strokeStyle=bad?css('--warn'):css('--accent');x.lineWidth=4;x.beginPath();x.moveTo(X(L.o[0]),Y(L.o[1]));x.lineTo(X(r.end[0]),Y(r.end[1]));x.stroke();
+      x.fillStyle=x.strokeStyle;x.beginPath();x.arc(X(r.end[0]),Y(r.end[1]),4,0,7);x.fill();
+      if(Rm<=60){x.fillStyle=css('--ink');x.font='600 11px '+css('--sans');x.textAlign='center';x.textBaseline='middle';const k=1+12/Math.max(1,r.reach*sc);x.fillText(String(r.i),X(L.o[0]+(r.end[0]-L.o[0])*k),Y(L.o[1]+(r.end[1]-L.o[1])*k));x.textBaseline='alphabetic';}}
+    x.lineCap='butt';x.fillStyle=css('--accent');x.beginPath();x.arc(X(L.o[0]),Y(L.o[1]),4,0,7);x.fill();}
   if(SITECFG.parcel){x.strokeStyle=css('--warn');x.lineWidth=2;x.setLineDash([]);x.beginPath();SITECFG.parcel.forEach((q,i)=>i?x.lineTo(X(q[0]),Y(q[1])):x.moveTo(X(q[0]),Y(q[1])));x.closePath();x.stroke();}
   x.restore();
   for(const m of (SITECFG.masts||[])){const on=am&&m.id===am.id;x.fillStyle=on?css('--accent'):css('--bg');x.strokeStyle=on?css('--accent'):css('--warn');x.lineWidth=2;x.beginPath();x.arc(X(m.pos[0]),Y(m.pos[1]),on?6:5,0,7);x.fill();x.stroke();
@@ -1380,7 +1568,7 @@ function drawPlan(){
   $('planLeg').innerHTML=`<span>wysokość budynku: 0 m</span><span class="cbar" style="background:linear-gradient(90deg,${[0.1,0.3,0.5,0.7,0.95].map(v=>'rgb('+cmap(v).map(Math.round).join(',')+')').join(',')})"></span><span>≥ ${hmax} m</span><span>· najbliższy budynek ${near.toFixed(0)} m</span>`;
   c._g={cx,cy};
 }
-function antTop(){const g=RT.geo;return g.kind==='delta'?g.apex:g.height;}
+function antTop(){const g=RT.geo;return g.kind==='delta'?g.apex:g.kind==='quad'?2*g.height-g.bottomAll:g.height;}
 function drawTable(){
   $('dx').innerHTML=DX.map(([n,a])=>{const g5=gAt(RT,a,5),g10=gAt(RT,a,10),g20=gAt(RT,a,20),d=g10-gAt(RF,a,10);
     return `<tr data-az="${a}" class="${a===state.sel?'sel':''}" tabindex="0"><td>${n}</td><td>${a}°</td><td>${fmtS(g5)}</td><td>${fmtS(g10)}</td><td>${fmtS(g20)}</td><td><span class="pill ${d>=0.5?'up':d<=-0.5?'down':''}">${fmt(d)} dB</span></td></tr>`}).join('');
@@ -1394,6 +1582,15 @@ $('pFeedSys').addEventListener('click',e=>{const b=e.target.closest('button');if
 const bindRange=(id,tab,key)=>$(id).addEventListener('input',e=>{P[tab][key]=parseFloat(e.target.value);deb();});
 bindRange('apex','delta','apex');bindRange('bottom','delta','bottom');bindRange('orient','delta','orient');
 bindRange('pHeight','dipole','height');
+$('pWire').addEventListener('input',e=>{setBeamOf('dipole',+e.target.value);state.fitMsg='';deb();});
+$('pSpread').addEventListener('input',e=>{const b=beamOf('dipole');P.dipole.spread=+e.target.value;setBeamOf('dipole',b);state.fitMsg='';deb();});
+for(const id of ['pA1','pA2'])$(id).addEventListener('change',()=>{const a=parseFloat($('pA1').value),b=parseFloat($('pA2').value);if(isNaN(a)||isNaN(b))return;
+  let a1=norm(a),s=norm(b-a1);if(s>180){a1=norm(b);s=360-s;}if(s<30){state.fitMsg='Kąt między ramionami musi mieć co najmniej 30°.';s=30;}else state.fitMsg='';P.dipole.arm1=a1;P.dipole.spread=s;recompute();});
+for(const [id,k] of [['pCx','cx'],['pCy','cy']])$(id).addEventListener('change',e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(!isNaN(v)){P.dipole[k]=Math.max(-100,Math.min(100,v));state.fitMsg='';if(state.nb.type)nbFromMasts();recompute();}});
+for(const [id,keep] of [['pFitA',true],['pFitB',false]])$(id).addEventListener('click',async()=>{let r;
+  for(let k=0;k<4;k++){r=fitDipole(keep);if(!r||r.err)break;await recompute();   // a bent dipole resonates a little longer: refit with the new length
+    const L=dipoleLayout(RT.geo);if(L.arms.every(a=>a.ray-a.reach>=FIT_MARGIN*0.6))break;}
+  if(!r)return;state.fitMsg=r.err?r.err:(keep?'Kąt dobrany przy zachowanym kierunku: ':'Najlepsze ułożenie: ')+`${r.s}°, wiązka ${r.beam}°, zapas ok. ${FIT_MARGIN} m od granicy.`;draw();});
 for(const [pre,tb] of [['d','delta'],['p','dipole']])$(pre+'Freq').addEventListener('change',e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(v>=1.8&&v<=30){P[tb].f=v;recompute();}else e.target.value=P[tb].f.toFixed(3);});
 $('wireType').addEventListener('change',e=>{if(e.target.value==='CUSTOM')state.vfCustom=wireVF(P[state.tab].f);state.wire=e.target.value;recompute();});
 $('wVf').addEventListener('change',e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(v>=0.85&&v<=1){state.vfCustom=v;state.wire='CUSTOM';$('wireType').value='CUSTOM';recompute();}else e.target.value=wireVF(P[state.tab].f).toFixed(3);});
@@ -1401,9 +1598,13 @@ bindRange('yHeight','y15','height');bindRange('yRange','y15','beamAz');
 bindRange('tHeight','y10','height');bindRange('tRange','y10','beamAz');
 bindRange('aHeight','a3s','height');bindRange('hHeight','hex','height');bindRange('hRange','hex','beamAz');
 $('hBand').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;Object.assign(P.hex,{band:v,f:HEX[v].f});recompute();});
-$('hTune').addEventListener('change',e=>{P.hex.tune=e.target.checked;recompute();});bindRange('aRange','a3s','beamAz');
+$('hTune').addEventListener('change',e=>{P.hex.tune=e.target.checked;recompute();});
+bindRange('qHeight','quad','height');bindRange('qRange','quad','beamAz');
+$('qBand').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;Object.assign(P.quad,{band:v,f:QUAD[v].f});recompute();});
+$('qMatch').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.quad.match=b.dataset.v;recompute();});
+$('qMulti').addEventListener('change',e=>{P.quad.multi=e.target.checked;recompute();});$('qTune').addEventListener('change',e=>{P.quad.tune=e.target.checked;recompute();});bindRange('aRange','a3s','beamAz');
 $('aBand').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...$('aBand').children].forEach(x=>x.setAttribute('aria-pressed',x===b));const v=b.dataset.v;Object.assign(P.a3s,{band:v,design:'a3s'+v,f:{20:14.15,15:21.2,10:28.5}[v]});recompute();});
-for(const [pre,tab] of [['d','delta'],['p','dipole'],['y','y15'],['t','y10'],['a','a3s'],['h','hex']]){
+for(const [pre,tab] of [['d','delta'],['p','dipole'],['y','y15'],['t','y10'],['a','a3s'],['h','hex'],['q','quad']]){
   $(pre+'Az').addEventListener('change',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){setBeamOf(tab,v);deb();}});
   $(pre+'Minus').addEventListener('click',()=>{setBeamOf(tab,beamOf(tab)-1);$(pre+'Az').value=beamOf(tab);deb();});
   $(pre+'Plus').addEventListener('click',()=>{setBeamOf(tab,beamOf(tab)+1);$(pre+'Az').value=beamOf(tab);deb();});
@@ -1422,8 +1623,9 @@ $('planZoom').addEventListener('click',e=>{const b=e.target.closest('button');if
 $('nbFromPlan').addEventListener('click',()=>{if(nbFromMasts())recompute();});
 $('nbDist').addEventListener('input',e=>{state.nb.dist=parseFloat(e.target.value);deb();});
 $('nbBrg').addEventListener('change',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){state.nb.brg=norm(v);e.target.value=state.nb.brg;recompute();}});
-$('nbTerm').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...$('nbTerm').children].forEach(x=>x.setAttribute('aria-pressed',x===b));state.nb.term=b.dataset.v;recompute();});
-$('mastSel').addEventListener('change',e=>{const k=antKey(state.tab,P[state.tab]);if(e.target.value)state.mastAssign[k]=e.target.value;else delete state.mastAssign[k];if(state.nb.type)nbFromMasts();recompute();});
+for(const id of ['nbTerm','nbTerm2'])$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.nb.term=b.dataset.v;recompute();});
+$('nbAuto').addEventListener('change',e=>{state.nbAuto=e.target.checked;recompute();});
+$('mastSel').addEventListener('change',e=>{state.fitMsg='';const k=antKey(state.tab,P[state.tab]);if(e.target.value)state.mastAssign[k]=e.target.value;else delete state.mastAssign[k];if(state.nb.type)nbFromMasts();recompute();});
 $('metalChk').addEventListener('change',e=>{state.metal=e.target.checked;recompute();});
 $('coaxType').addEventListener('change',e=>{state.coax.type=e.target.value;recompute();});
 $('coaxLen').addEventListener('input',e=>{state.coax.len=parseInt(e.target.value);deb();});
@@ -1445,7 +1647,7 @@ window.addEventListener('resize',()=>{clearTimeout(tmr);tmr=setTimeout(draw,120)
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);}catch(e){}
 new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 document.querySelectorAll('.tabs button').forEach(b=>{if(!SITECFG.tabs.includes(b.dataset.tab))b.remove();});
-document.querySelectorAll('.panel[data-tab]').forEach(p=>{if(!SITECFG.tabs.includes(p.dataset.tab)&&['delta','dipole','y15','y10','a3s','hex'].includes(p.dataset.tab))p.remove();});
+document.querySelectorAll('.panel[data-tab]').forEach(p=>{if(!SITECFG.tabs.includes(p.dataset.tab)&&['delta','dipole','y15','y10','a3s','hex','quad'].includes(p.dataset.tab))p.remove();});
 $('coordTxt').textContent=SITECFG.lat.toFixed(4)+'°N '+SITECFG.lon.toFixed(4)+'°E';$('h0Txt').textContent=(SITECFG.callsign?SITECFG.callsign+' · ':'')+'punkt '+SITECFG.h0.toFixed(1).replace('.',',')+' m n.p.m.';
 $('apexHint').textContent=SITECFG.apexHint;$('siteNote').textContent=SITECFG.note;
 {const h=(location.hash||'').slice(1);if(P[h]&&h!=='delta'&&SITECFG.tabs.includes(h)){state.tab=h;}
