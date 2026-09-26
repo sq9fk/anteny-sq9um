@@ -58,13 +58,22 @@ function necGeomDipole(p,scale,r){
   let droop=0; if(p.shape==='invv')droop=Math.min(30*Math.PI/180,Math.asin(Math.min(1,Math.max(0,(p.height-2)/half))));
   const nl=segCount(half,lam,10), segL=half/nl, c=segL/2;  // centre feed wire has the same length as one leg segment
   const d1=[-Math.sin(sp/2),Math.cos(sp/2)], d2=[Math.sin(sp/2),Math.cos(sp/2)], L=half-c, hz=L*Math.cos(droop), endZ=p.height-L*Math.sin(droop);
-  const E1=[-c+hz*d1[0],hz*d1[1],endZ], E2=[c+hz*d2[0],hz*d2[1],endZ];
+  let E1=[-c+hz*d1[0],hz*d1[1],endZ], E2=[c+hz*d2[0],hz*d2[1],endZ], mmInfo=null;
   const wires=[{a:E1,b:[-c,0,p.height],n:nl,r},{a:[-c,0,p.height],b:[c,0,p.height],n:1,r},{a:[c,0,p.height],b:E2,n:nl,r}];
+  if(p.mm){ // strung between masts: each arm runs straight toward its tie point (horizontal distance D[i], tie height E[i]); in 'fix' mode the arm reaches
+    // the tie point minus the rope, or the given length L[i] (fed through a tuner); otherwise it is resonant; any excess hangs down vertically at the mast to hmin
+    const vf=p.mm.vf||1, dd=[d1,d2], sx=[-c,c], ends=[], hrun=[], drop=[], Lph=[];let short=0;wires.length=0;
+    for(let i=0;i<2;i++){const D=p.mm.D[i], Ez=p.mm.E[i], S=Math.hypot(D,p.height-Ez), Sb=S/vf;   // NEC wire is the bare-wire equivalent: longer by 1/vf
+      const hm=p.mm.hmin||1, Lb=p.mm.fix?Math.max(0.5,(p.mm.L?p.mm.L[i]:S-(p.mm.rope||0.3))/vf):half-c, run=Math.min(Lb,Sb), dr=Math.min(Lb-run,Math.max(0,Ez-hm)/vf);short=Math.max(short,(Lb-run-dr)*vf);
+      const P0=[sx[i],0,p.height], P1=[sx[i]+run*D/S*dd[i][0],run*D/S*dd[i][1],p.height+run*(Ez-p.height)/S];
+      const nA=segCount(run,lam,6);wires.push(i===0?{a:P1,b:P0,n:nA,r}:{a:P0,b:P1,n:nA,r});if(i===0)wires.push({a:[-c,0,p.height],b:[c,0,p.height],n:1,r});
+      if(dr>0.05)ends.push({a:P1,b:[P1[0],P1[1],P1[2]-dr],n:segCount(dr,lam,3),r});hrun.push(Math.min(D,run*vf*D/S));drop.push(dr*vf);Lph.push((run+dr)*vf);}
+    wires.push(...ends);mmInfo={hrun,drop,Lph,short,fix:!!p.mm.fix};}
   if(p.feedSys==='atu'||p.feedSys==='nobalun'){ // coax shield outer surface without balun: down to 0.3 m, then along the ground (toward the shack, behind the main beam)
     const rc=p.coaxR||0.0025, zB=0.3, drop=p.height-zB, run=Math.max(1,(p.coaxLen||20)-drop), nv=Math.max(3,Math.ceil((p.height-zB)/(lam/40))), nh=Math.max(3,Math.ceil(run/(lam/40)));
     wires.push({a:[c,0,p.height],b:[c,0,zB],n:nv,r:rc},{a:[c,0,zB],b:[c,-run,zB],n:nh,r:rc});
   }
-  return {wires,feed:{tag:2,seg:1},info:{kind:'dipole',Le,droop:droop*180/Math.PI,endH:endZ,height:p.height,spread:sp*180/Math.PI}};
+  return {wires,feed:{tag:2,seg:1},info:{kind:'dipole',Le,droop:p.mm?0:droop*180/Math.PI,endH:endZ,height:p.height,spread:sp*180/Math.PI,mm:mmInfo}};
 }
 // Yagi dimensions tuned with NEC-2 in free space (positions from reflector, element lengths, tube radius) [m]
 const NEC_YAGI={
@@ -109,10 +118,10 @@ function wireSegs(wires){const segs=[];
 // ---- analysis: tune to resonance (wire antennas), then pattern over Sommerfeld-Norton ground
 async function necAnalyze(t,p,wireR,ground,extra){
   const gr={er:ground.er,sig:ground.sig};
-  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr]);
+  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,p.mm||0,wireR,gr]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   let scale=1, tuned=false; const geomOf=s=>necGeom(t,p,s,wireR);
-  if(t==='delta'||t==='dipole'||((t==='hex'||t==='quad')&&p.tune)){ // secant search for X=0 at the resonance frequency
+  if(t==='delta'||(t==='dipole'&&!(p.mm&&p.mm.fix))||((t==='hex'||t==='quad')&&p.tune)){ // secant search for X=0 at the resonance frequency
     const fT=(t==='delta'&&p.mb)?p.fDesign:p.f;  // multiband loop: resonant at its design frequency
     const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,fT,gr,['XQ'],ldCards(g.loads)))).X;};
     let s0=1,x0=await X(s0),s1=(t==='hex'||t==='quad')?0.98:0.97,x1=await X(s1);
@@ -151,7 +160,7 @@ async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nbs,extra){
   const gr={er:ground.er,sig:ground.sig};
   const base=await necAnalyze(t,p,wireR,ground,extra);
   const g1=necGeom(t,p,base.scale,wireR);
-  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
+  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.mm||0,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   const used=[], skipped=[]; let wires=g1.wires.slice();
   const loads=ldCards(g1.loads);

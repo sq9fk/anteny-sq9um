@@ -129,6 +129,7 @@ tbody tr{cursor:pointer}
 .dxdir .dxh{font-weight:600;font-size:13px}
 .dxdir .dxrow{font-size:12.5px;padding:6px 8px}
 .dxno{font-size:12px;color:var(--muted);padding:2px 8px}
+.dxsub{font-size:12.5px;margin-top:6px;padding:0 2px}
 .dxg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px 6px;margin-top:4px;font-family:var(--mono);font-size:11px;color:var(--muted)}
 .dxg .top{color:var(--ink);font-weight:600}
 .dxrow .best{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
@@ -933,13 +934,22 @@ function necGeomDipole(p,scale,r){
   let droop=0; if(p.shape==='invv')droop=Math.min(30*Math.PI/180,Math.asin(Math.min(1,Math.max(0,(p.height-2)/half))));
   const nl=segCount(half,lam,10), segL=half/nl, c=segL/2;  // centre feed wire has the same length as one leg segment
   const d1=[-Math.sin(sp/2),Math.cos(sp/2)], d2=[Math.sin(sp/2),Math.cos(sp/2)], L=half-c, hz=L*Math.cos(droop), endZ=p.height-L*Math.sin(droop);
-  const E1=[-c+hz*d1[0],hz*d1[1],endZ], E2=[c+hz*d2[0],hz*d2[1],endZ];
+  let E1=[-c+hz*d1[0],hz*d1[1],endZ], E2=[c+hz*d2[0],hz*d2[1],endZ], mmInfo=null;
   const wires=[{a:E1,b:[-c,0,p.height],n:nl,r},{a:[-c,0,p.height],b:[c,0,p.height],n:1,r},{a:[c,0,p.height],b:E2,n:nl,r}];
+  if(p.mm){ // strung between masts: each arm runs straight toward its tie point (horizontal distance D[i], tie height E[i]); in 'fix' mode the arm reaches
+    // the tie point minus the rope, or the given length L[i] (fed through a tuner); otherwise it is resonant; any excess hangs down vertically at the mast to hmin
+    const vf=p.mm.vf||1, dd=[d1,d2], sx=[-c,c], ends=[], hrun=[], drop=[], Lph=[];let short=0;wires.length=0;
+    for(let i=0;i<2;i++){const D=p.mm.D[i], Ez=p.mm.E[i], S=Math.hypot(D,p.height-Ez), Sb=S/vf;   // NEC wire is the bare-wire equivalent: longer by 1/vf
+      const hm=p.mm.hmin||1, Lb=p.mm.fix?Math.max(0.5,(p.mm.L?p.mm.L[i]:S-(p.mm.rope||0.3))/vf):half-c, run=Math.min(Lb,Sb), dr=Math.min(Lb-run,Math.max(0,Ez-hm)/vf);short=Math.max(short,(Lb-run-dr)*vf);
+      const P0=[sx[i],0,p.height], P1=[sx[i]+run*D/S*dd[i][0],run*D/S*dd[i][1],p.height+run*(Ez-p.height)/S];
+      const nA=segCount(run,lam,6);wires.push(i===0?{a:P1,b:P0,n:nA,r}:{a:P0,b:P1,n:nA,r});if(i===0)wires.push({a:[-c,0,p.height],b:[c,0,p.height],n:1,r});
+      if(dr>0.05)ends.push({a:P1,b:[P1[0],P1[1],P1[2]-dr],n:segCount(dr,lam,3),r});hrun.push(Math.min(D,run*vf*D/S));drop.push(dr*vf);Lph.push((run+dr)*vf);}
+    wires.push(...ends);mmInfo={hrun,drop,Lph,short,fix:!!p.mm.fix};}
   if(p.feedSys==='atu'||p.feedSys==='nobalun'){ // coax shield outer surface without balun: down to 0.3 m, then along the ground (toward the shack, behind the main beam)
     const rc=p.coaxR||0.0025, zB=0.3, drop=p.height-zB, run=Math.max(1,(p.coaxLen||20)-drop), nv=Math.max(3,Math.ceil((p.height-zB)/(lam/40))), nh=Math.max(3,Math.ceil(run/(lam/40)));
     wires.push({a:[c,0,p.height],b:[c,0,zB],n:nv,r:rc},{a:[c,0,zB],b:[c,-run,zB],n:nh,r:rc});
   }
-  return {wires,feed:{tag:2,seg:1},info:{kind:'dipole',Le,droop:droop*180/Math.PI,endH:endZ,height:p.height,spread:sp*180/Math.PI}};
+  return {wires,feed:{tag:2,seg:1},info:{kind:'dipole',Le,droop:p.mm?0:droop*180/Math.PI,endH:endZ,height:p.height,spread:sp*180/Math.PI,mm:mmInfo}};
 }
 // Yagi dimensions tuned with NEC-2 in free space (positions from reflector, element lengths, tube radius) [m]
 const NEC_YAGI={
@@ -984,10 +994,10 @@ function wireSegs(wires){const segs=[];
 // ---- analysis: tune to resonance (wire antennas), then pattern over Sommerfeld-Norton ground
 async function necAnalyze(t,p,wireR,ground,extra){
   const gr={er:ground.er,sig:ground.sig};
-  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr]);
+  const key=JSON.stringify([extra?extra.key:0,NEC.ek,t,p.tune,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,p.mm||0,wireR,gr]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   let scale=1, tuned=false; const geomOf=s=>necGeom(t,p,s,wireR);
-  if(t==='delta'||t==='dipole'||((t==='hex'||t==='quad')&&p.tune)){ // secant search for X=0 at the resonance frequency
+  if(t==='delta'||(t==='dipole'&&!(p.mm&&p.mm.fix))||((t==='hex'||t==='quad')&&p.tune)){ // secant search for X=0 at the resonance frequency
     const fT=(t==='delta'&&p.mb)?p.fDesign:p.f;  // multiband loop: resonant at its design frequency
     const X=async s=>{const g=geomOf(s);return parseZ(await necRun(wiresToDeck(g.wires,g.feed,fT,gr,['XQ'],ldCards(g.loads)))).X;};
     let s0=1,x0=await X(s0),s1=(t==='hex'||t==='quad')?0.98:0.97,x1=await X(s1);
@@ -1026,7 +1036,7 @@ async function necAnalyzeNb(t,p,wireR,ground,mainBeam,nbs,extra){
   const gr={er:ground.er,sig:ground.sig};
   const base=await necAnalyze(t,p,wireR,ground,extra);
   const g1=necGeom(t,p,base.scale,wireR);
-  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
+  const key=JSON.stringify(['nb',extra?extra.key:0,NEC.ek,t,p.mm||0,p.f,p.apex,p.bottom,p.feed,p.feedSys,(p.feedSys==='atu'||p.feedSys==='nobalun')?[p.coaxLen,p.coaxR]:0,p.height,p.shape,p.spread,p.multi,p.mb,p.fDesign,p.corners,p.feedPos,p.design,p.band,wireR,gr,mainBeam,nbs.map(n=>[n.type,n.p,n.beam,n.dist,n.brg,n.term])]);
   if(NEC.cache.has(key))return NEC.cache.get(key);
   const used=[], skipped=[]; let wires=g1.wires.slice();
   const loads=ldCards(g1.loads);
@@ -1324,10 +1334,10 @@ function parcelRay(o,az){const Pg=SITECFG.parcel,d=[Math.sin(az*RAD),Math.cos(az
   for(let i=0,j=Pg.length-1;i<Pg.length;j=i++){const a=Pg[j],b=Pg[i],ex=b[0]-a[0],ey=b[1]-a[1],den=d[0]*ey-d[1]*ex;if(Math.abs(den)<1e-12)continue;
     const wx=a[0]-o[0],wy=a[1]-o[1],t=(wx*ey-wy*ex)/den,u=(wx*d[1]-wy*d[0])/den;if(t>1e-9&&u>=0&&u<=1)best=Math.min(best,t);}return best;}
 // dipole arms in plan: azimuths, horizontal reach, ends (local E/N metres), fit in the parcel
-function dipoleLayout(g){const p=P.dipole,o=antPos('dipole',p),reach=g.Lphys/2*Math.cos((g.droop||0)*RAD),Pg=SITECFG.parcel;
-  const arms=[p.arm1,norm(p.arm1+p.spread)].map((az,i)=>{const e=[o[0]+reach*Math.sin(az*RAD),o[1]+reach*Math.cos(az*RAD)];
+function dipoleLayout(g){const p=P.dipole,o=antPos('dipole',p),mm=p.mm&&g.mm?g.mm:null,reach0=g.Lphys/2*Math.cos((g.droop||0)*RAD),Pg=SITECFG.parcel,reach=mm?Math.max(...mm.hrun):reach0;
+  const arms=[p.arm1,norm(p.arm1+p.spread)].map((az,i)=>{const reach=mm?mm.hrun[i]:reach0,e=[o[0]+reach*Math.sin(az*RAD),o[1]+reach*Math.cos(az*RAD)];
     const r={i:i+1,az,end:e,reach};if(Pg){r.inside=inPoly(e,Pg);r.edge=edgeDist(e,Pg);r.ray=parcelRay(o,az);}return r;});
-  return {o,reach,arms,centerIn:Pg?inPoly(o,Pg):true};}
+  return {o,reach,arms,mm,centerIn:Pg?inPoly(o,Pg):true};}
 const FIT_MARGIN=0.5;
 function fitDipole(keepBeam){const p=P.dipole,g=RT.geo,Pg=SITECFG.parcel;if(!Pg||g.kind!=='dipole')return null;
   const o=antPos('dipole',p);if(!inPoly(o,Pg))return {err:'Środek dipola jest poza działką. Przesuń go albo wybierz maszt.'};
@@ -1346,9 +1356,9 @@ const MAIN_KEYS=['delta','y15:5el','y15:4el','y10','a3s','hex','quad'].filter(k=
 const NO_DIPOLE=new Set(['delta']);
 function mastOcc(mid){const keys=Object.keys(state.mastAssign).filter(k=>state.mastAssign[k]===mid&&SITECFG.tabs.includes(k.split(':')[0]));return {main:keys.find(k=>k!=='dipole')||null,dipole:keys.includes('dipole')};}
 function assignMast(key,mid){ // returns a note about what else moved, or an error {err}
-  if(!mid){delete state.mastAssign[key];return '';}
+  if(!mid){if(key==='dipole')P.dipole.mm=null;delete state.mastAssign[key];return '';}
   const o=mastOcc(mid);
-  if(key==='dipole'){if(o.main&&NO_DIPOLE.has(o.main))return {err:`Na ${mid} wisi delta, dipola nie da się tam dodać.`};state.mastAssign.dipole=mid;return '';}
+  if(key==='dipole'){P.dipole.mm=null;if(o.main&&NO_DIPOLE.has(o.main))return {err:`Na ${mid} wisi delta, dipola nie da się tam dodać.`};state.mastAssign.dipole=mid;return '';}
   let note='';
   if(o.main&&o.main!==key){delete state.mastAssign[o.main];note+=`${ANTNAME[o.main]} zdjęta z ${mid} (bez masztu). `;}
   if(NO_DIPOLE.has(key)&&o.dipole){delete state.mastAssign.dipole;note+=`Dipol zdjęty z ${mid}, bo nie wisi razem z deltą. `;}
@@ -1548,24 +1558,39 @@ async function optimizeDX(t){const my=++dxRun,p0=P[t],lam=299.8/p0.f,gr=GROUNDS[
       const fitsP=rows.some(r=>{for(let b=0;b<360;b++){const a1=norm(b-Math.floor(r.sp/2)),a2=norm(a1+r.sp);if(Dp[a1]>=r.reach&&Dp[a2]>=r.reach)return true;}return false;});
       acc.why[q.mast]=fitsP?'w granicach działki by się zmieścił, ale każde ułożenie ramion zahacza o drzewa albo zabudowania (drut musi być 0,5 m nad koroną i 1 m nad dachem)':`ramiona (${fmtS(rows[rows.length-1].reach)}–${fmtS(rows[0].reach)} m w rzucie) nie mieszczą się w granicach działki nawet jako V 30°`;});
     // dipole strung between masts: feed on one mast and the ends tied to the two others (the V angle follows from the mast layout),
-    // or a straight dipole with its centre in the middle of the span between two masts; an arm must end before its mast (the rest is rope)
+    // or a straight dipole fed in the middle of the span between two masts. Heights: a mast is as tall as the antenna on its top (Maszty tab);
+    // the dipole centre and its ends hang 0.5 m below that antenna; a mast without an antenna takes the dipole height. Two variants per layout:
+    // resonant (any excess wire hangs down vertically at the mast, to 1 m above ground) and cut to the masts (0.3 m rope) with an eATU at the feed point.
     const MMr=[];if(HAS_MASTS&&SITECFG.masts.length>=2){const ms=SITECFG.masts,azOf=(a,b)=>norm(Math.round(Math.atan2(b[0]-a[0],b[1]-a[1])/RAD)),dist=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1]),cfg=[];
-      if(ms.length>=3)for(const c of ms){const [A,B]=ms.filter(m=>m!==c),zA=azOf(c.pos,A.pos),zB=azOf(c.pos,B.pos),d=norm(zB-zA),[e1,e2,a1,sp]=d<=180?[A,B,zA,d]:[B,A,zB,360-d];
-        cfg.push({kind:'v',c,e1,e2,a1,sp,pos:c.pos,d1:dist(c.pos,e1.pos),d2:dist(c.pos,e2.pos),label:`zasilanie na ${c.id}, końce do ${e1.id} i ${e2.id}`});}
-      for(let x=0;x<ms.length;x++)for(let y=x+1;y<ms.length;y++){const A=ms[x],B=ms[y],mid=[(A.pos[0]+B.pos[0])/2,(A.pos[1]+B.pos[1])/2],L=dist(A.pos,B.pos)/2;
-        cfg.push({kind:'span',e1:A,e2:B,a1:azOf(mid,A.pos),sp:180,pos:mid,d1:L,d2:L,label:`prosty, zasilanie w połowie między ${A.id} i ${B.id}, końce do ${A.id} i ${B.id}`});}
-      let k=0;for(const m of cfg){m.a2=norm(m.a1+m.sp);m.beam=norm(m.a1+Math.floor(m.sp/2));
-        if(m.kind==='v'){const o=mastOcc(m.c.id);if(o.main&&NO_DIPOLE.has(o.main)){m.why=`na ${m.c.id} wisi delta`;MMr.push(m);continue;}}
-        let r=rows.find(q=>q.sp===Math.round(m.sp/5)*5&&Math.abs(q.sp-m.sp)<0.5);
-        if(!r){hint.textContent=`Liczę NEC-2… dipol między masztami, V ${m.sp}° (${++k})`;const sp=Math.max(10,m.sp),res=await necAnalyze('dipole',{...pc0,spread:sp},wireRadius(),gr);if(my!==dxRun)return;
-          const loss=feedLossOf('dipole',p0,res.Z);r={sp,reach:res.info.Le*vf/2*Math.cos(res.info.droop*RAD),loss,G1:dxScore(res,reduceSegs(res.segs,lam),m.beam,o,TT,loss)};}
-        m.reach=r.reach;m.loss=r.loss;m.g=r.G1||AZ.map((_,i)=>gAt(r,m.beam,i));m.rope1=m.d1-r.reach;m.rope2=m.d2-r.reach;
-        const f1=SITECFG.parcel?dxFree(m.pos,m.a1,x=>h-x*tn,need):Infinity,f2=SITECFG.parcel?dxFree(m.pos,m.a2,x=>h-x*tn,need):Infinity;
-        if(m.rope1<0||m.rope2<0)m.why=`ramię (${fmtS(r.reach)} m w rzucie) dłuższe niż odległość do ${m.rope1<0?m.e1.id:m.e2.id} (${fmtS(m.rope1<0?m.d1:m.d2)} m) o ${fmtS(-Math.min(m.rope1,m.rope2))} m`;
-        else if(f1<r.reach||f2<r.reach)m.why='drut zahacza o drzewa albo zabudowania';
+      const top=mid=>{const o=mastOcc(mid);return o.main?+keyParams(o.main).height:null;},tieH=mid=>{const t=top(mid);return t?Math.max(2,t-0.5):p0.height;};
+      if(ms.length>=3)for(const c of ms){const [A,B]=ms.filter(m=>m!==c),zA=azOf(c.pos,A.pos),zB=azOf(c.pos,B.pos),d=norm(zB-zA),[e1,e2,a1,sp]=d<=180?[A,B,zA,d]:[B,A,zB,360-d],tc=top(c.id);
+        cfg.push({kind:'v',c,e1,e2,a1,sp,pos:c.pos,D:[dist(c.pos,e1.pos),dist(c.pos,e2.pos)],E:[tieH(e1.id),tieH(e2.id)],hC:tc?Math.min(p0.height,Math.max(2,tc-0.5)):p0.height,label:`zasilanie na ${c.id}, końce do ${e1.id} i ${e2.id}`});}
+      for(let x=0;x<ms.length;x++)for(let y=x+1;y<ms.length;y++){const A=ms[x],B=ms[y],mid=[(A.pos[0]+B.pos[0])/2,(A.pos[1]+B.pos[1])/2],Lh=dist(A.pos,B.pos)/2,E=[tieH(A.id),tieH(B.id)];
+        cfg.push({kind:'span',e1:A,e2:B,a1:azOf(mid,A.pos),sp:180,pos:mid,D:[Lh,Lh],E,hC:Math.min(...E),label:`prosty, zasilanie w połowie między ${A.id} i ${B.id}, końce do ${A.id} i ${B.id}`});}
+      let k=0;const vfw=wireVF(p0.f);
+      for(const m of cfg){m.a2=norm(m.a1+m.sp);m.beam=norm(m.a1+Math.floor(m.sp/2));m.v=[];
+        if(m.kind==='v'){const oc=mastOcc(m.c.id);if(oc.main&&NO_DIPOLE.has(oc.main)){m.why=`na ${m.c.id} wisi delta`;MMr.push(m);continue;}}
+        // resonant variant first; then the tuner variant: arm lengths chosen by NEC among a few candidates (each arm at most up to its mast,
+        // the rest is Dyneema rope), scored by the mean DX gain over the eight directions after feed losses
+        // one layout per mast set: resonant, with any excess hanging down vertically at the mast (end at least 2 m above ground);
+        // when even that does not fit, the longest wire that does (to the mast and down to 2 m) fed through an eATU
+        const HMIN=2;
+        const evalV=async(fix,Lc)=>{const pv={...pc0,height:m.hC,shape:'flat',spread:Math.max(10,m.sp),feedSys:fix?'atu':(p0.feedSys==='atu'?'balun11':p0.feedSys),mm:{D:m.D,E:m.E,vf:vfw,fix,rope:0.3,hmin:HMIN,L:Lc||undefined}};
+          const res=await necAnalyze('dipole',pv,wireRadius(),gr);if(my!==dxRun)throw 'stop';const mi=res.info.mm,loss=feedLossOf('dipole',pv,res.Z),v={fix,loss,hrun:mi.hrun,drop:mi.drop,Lph:mi.Lph,short:mi.short,feedSys:pv.feedSys,L:Lc,res};
+          v.rope=m.D.map((D,i)=>Math.max(0,D-mi.hrun[i]));v.endZ=m.E.map((E,i)=>mi.drop[i]>0.05?E-mi.drop[i]:m.hC+(E-m.hC)*mi.hrun[i]/m.D[i]);
+          const fr=[m.a1,m.a2].map((az,i)=>SITECFG.parcel?dxFree(m.pos,az,d=>m.hC+(m.E[i]-m.hC)*d/m.D[i],need):Infinity);if(fr.some((f,i)=>f<mi.hrun[i]-0.3))v.warn='drut przechodzi przez korony drzew albo za nisko nad zabudowaniami (wg lidaru)';
+          v.g=dxScore(res,reduceSegs(res.segs,lam),m.beam,o,TT,loss);await new Promise(r=>setTimeout(r,0));return v;};
+        hint.textContent=`Liczę NEC-2… dipol między masztami ${k+1} z ${cfg.length}`;
+        try{let v=await evalV(false,null);
+          if(v.short>0.05){const rr=rows.reduce((a,q)=>Math.abs(q.sp-m.sp)<Math.abs(a.sp-m.sp)?q:a), Lres=rr.reach/Math.cos((rr.droop||0)*RAD), mx=[0,1].map(i=>Math.hypot(m.D[i],m.hC-m.E[i])+Math.max(0,m.E[i]-HMIN)-0.05);
+            v=await evalV(true,mx.map(x=>Math.round(Math.min(Lres,x)*10)/10));v.missing=v.Lph.map(x=>Math.max(0,Lres-x));v.Lres=Lres;}
+          delete v.res;m.v.push(v);}
+        catch(e){if(e==='stop')return;throw e;}
+        k++;
         MMr.push(m);}
-      AZ.forEach((_,i)=>{const ok=MMr.filter(m=>!m.why);if(!ok.length)return;const b=ok.reduce((a,c)=>c.g[i]>a.g[i]?c:a);
-        acc.extra[i].push({sp:b.sp,beam:b.beam,a1:b.a1,a2:b.a2,reach:b.reach,loss:b.loss,ropes:[b.rope1,b.rope2],q:{mast:b.kind==='v'?b.c.id:null,pos:b.pos,label:'między masztami: '+b.label,mm:true},g:b.g[i],gs:b.g[i]});});}
+      const mmDesc=(m,v)=>`między masztami: ${m.label}${v.fix?`, drut ${v.Lph.map(x=>fmtS(x)).join(' + ')} m + eATU`:', rezonansowy'}${v.drop.some(d=>d>0.05)?', końce opuszczone przy masztach':''}`;
+      AZ.forEach((_,i)=>{let b=null;MMr.forEach((m,mk)=>(m.v||[]).forEach((v,vk)=>{if(v.g&&!v.warn&&(!b||v.g[i]>b.v.g[i]))b={m,v,mk,vk};}));if(!b)return;
+        acc.extra[i].push({sp:b.m.sp,beam:b.m.beam,a1:b.m.a1,a2:b.m.a2,loss:b.v.loss,mmRef:[b.mk,b.vk],q:{mast:b.m.kind==='v'?b.m.c.id:null,pos:b.m.pos,label:mmDesc(b.m,b.v)},g:b.v.g[i],gs:b.v.g[i]});});}
     DXRES.dipole=acc.res('dipole');DXRES.dipole.mm=MMr;const fitsAt={length:nfit};
     if(!fitsAt.length){const r30=rows[rows.length-1];DXRES.dipole.why=`Ramię ma w rzucie ${fmtS(rows[0].reach)} m (V 30°: ${fmtS(r30.reach)} m), a z żadnego ${HAS_MASTS?'masztu ani nowego punktu':'punktu działki'} nie ma tyle wolnego miejsca w dwóch kierunkach naraz (granica działki, zabudowania, drzewa). Spróbuj odwróconego V, wyższego pasma albo zagięcia końców (tego strona nie liczy).`;}
   } else if(t==='delta'){const vf=dVF(p0),B=[];for(let b=1;b<=Math.min(5,p0.apex-1)+1e-9;b+=1)B.push(b);const F=['corner','side','base'];let k=0;
@@ -1598,15 +1623,25 @@ function dxLabel(t,r){if(!r)return 'nie mieści się w działce z żadnego miejs
   if(t==='delta')return `<b>${r.q.label}</b>${busy()}, dolny drut ${r.orient}°–${r.orient+180}°, dół ${r.bottom.toFixed(1)} m, zasilanie: ${FEEDNAME[r.feed]}${P.delta.mb?'':', balun '+r.balun+':1'}`;
   const C=P.hdelta.corners,nm=j=>{const c=C[(r.rot+j)%3];return c.src!=='pt'?c.src:'narożnik '+((r.rot+j)%3+1);};return r.fp==='corner'?`zasilanie w narożniku <b>${nm(0)}</b>`:`zasilanie na środku boku <b>${nm(0)}–${nm(1)}</b>`;}
 function renderDX(t){const el=document.querySelector(`.dxlist[data-t="${t}"]`),R=DXRES[t];if(!el)return;if(!R){el.innerHTML='';return;}const on=state.dxOn&&state.dxOn[t];
-  const mm=R.mm&&R.mm.length?`<div class="dxdir"><div class="dxh">Dipol rozpięty między masztami</div>`+R.mm.map((m,k)=>{if(m.why)return `<div class="dxno"><b>${m.label}</b>${m.sp<180?` (V ${m.sp}°)`:''}: ${m.why}</div>`;
-      const bi=m.g.reduce((b,g,i)=>g>m.g[b]?i:b,0);return `<button type="button" class="dxrow${on==='mm:'+k?' on':''}" data-t="${t}" data-mm="${k}"><b>${m.label}</b>, ramiona na ${m.a1}° i ${m.a2}°${m.sp<180?` (V ${m.sp}°)`:''}, liny ${fmtS(m.rope1)} i ${fmtS(m.rope2)} m<span class="ls"> · straty zasilania ${fmtS(m.loss)} dB</span>
-        <span class="dxg">${m.g.map((g,i)=>`<span${i===bi?' class="top"':''}>${DXCODE[i]} ${fmtS(g)}</span>`).join('')}</span></button>`;}).join('')+'</div>':'';
+  const gg=(g)=>{const bi=g.reduce((b,x,i)=>x>g[b]?i:b,0);return `<span class="dxg">${g.map((x,i)=>`<span${i===bi?' class="top"':''}>${DXCODE[i]} ${fmtS(x)}</span>`).join('')}</span>`;};
+  const mm=R.mm&&R.mm.length?`<div class="dxdir"><div class="dxh">Dipol rozpięty między masztami</div><p class="hint" style="margin:0 2px">Maszt ma wysokość anteny na jego szczycie (zakładka Maszty); środek i końce dipola wiszą 0,5 m niżej. Maszt bez anteny: wysokość dipola. Drut ma długość rezonansową, a nadmiar zwisa pionowo przy maszcie (koniec co najmniej 2 m nad ziemią, odsunięty od masztu na lince). Jeśli i tak się nie mieści, strona bierze najdłuższy drut, jaki się mieści, z eATU.</p>`+R.mm.map((m,k)=>{
+      const head=`<div class="dxsub"><b>${m.label}</b>${m.sp<180?` (V ${m.sp}°)`:''}, ramiona na ${m.a1}° i ${m.a2}°; środek ${fmtS(m.hC)} m, końce ${m.E.map(e=>fmtS(e)).join(' / ')} m</div>`;
+      if(m.why)return head+`<div class="dxno">${m.why}</div>`;
+      return head+m.v.map((v,vk)=>{const nm=v.fix?'najdłuższy drut, jaki się mieści + eATU':'rezonansowy';if(v.why)return `<div class="dxno"><b>${nm}</b>: ${v.why}</div>`;
+        const det=`ramiona ${v.Lph.map(x=>fmtS(x)).join(' i ')} m drutu`+v.drop.map((d,i)=>d>0.05?`, przy ${[m.e1.id,m.e2.id][i]} ${fmtS(d)} m pionowo w dół (koniec ${fmtS(v.endZ[i])} m nad ziemią)`:'').join('')+(v.rope.some(x=>x>0.35)?`, dalej linka ${v.rope.map(x=>fmtS(x)).join(' i ')} m do masztów`:'')+(v.fix?`; do rezonansu (${fmtS(v.Lres)} m na ramię) brakuje ${v.missing.map(x=>fmtS(x)).join(' i ')} m, dopasowuje eATU`:'');
+        return `<button type="button" class="dxrow${on==='mm:'+k+':'+vk?' on':''}" data-t="${t}" data-mm="${k}" data-v="${vk}"><b>${nm}</b>: ${det}<span class="ls"> · straty zasilania ${fmtS(v.loss)} dB</span>${v.warn?`<br><span class="warn">Uwaga: ${v.warn}.</span>`:''}${gg(v.g)}</button>`;}).join('');}).join('')+'</div>':'';
   el.innerHTML=mm+R.map((d,i)=>`<div class="dxdir"><div class="dxh">${DXSHORT[i]} ${DX[i][1]}°</div>`+(d.opts.some(o=>o&&!o.none)?d.opts.map((r,k)=>r.none?`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`:
     `<button type="button" class="dxrow${on===i+':'+k?' on':''}" data-t="${t}" data-i="${i}" data-k="${k}"><span class="g">${fmtS(r.g)} dBi</span>${k===d.def&&d.opts.length>1?'<span class="best">polecany</span> ':''}${dxLabel(t,r)}<span class="ls"> · straty zasilania ${fmtS(r.loss)} dB${r.gain!=null?` · o ${fmtS(r.gain)} dB więcej niż najlepszy maszt`:''}</span></button>`).join(''):
     `<div class="dxno">${dxLabel(t,null)}</div>`+d.opts.filter(o=>o&&o.none).map(r=>`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`).join(''))+'</div>').join('');}
-function applyMM(t,k){const m=DXRES[t]&&DXRES[t].mm&&DXRES[t].mm[k];if(!m||m.why)return;const i=m.g.reduce((b,g,j)=>g>m.g[b]?j:b,0);
-  applyDX(t,i,-1,{sp:m.sp,a1:m.a1,a2:m.a2,beam:m.beam,q:{mast:m.kind==='v'?m.c.id:null,pos:m.pos,label:m.label}});state.dxOn[t]='mm:'+k;renderDX(t);}
-function applyDX(t,i,k,rr){const d=DXRES[t]&&DXRES[t][i],r=rr||(d&&d.opts[k]);if(!r||r.none)return;state.dxOn=state.dxOn||{};state.dxOn[t]=i+':'+k;let note='';
+function applyMM(t,k,vk,di){const m=DXRES[t]&&DXRES[t].mm&&DXRES[t].mm[k],v=m&&m.v&&m.v[vk];if(!v||v.why)return;const i=di!=null?di:v.g.reduce((b,g,j)=>g>v.g[b]?j:b,0);
+  state.dxOn=state.dxOn||{};let note='';
+  if(m.kind==='v'){const x=assignMast('dipole',m.c.id);note=x&&x.err?x.err:'';}else{assignMast('dipole',null);P.dipole.cx=m.pos[0];P.dipole.cy=m.pos[1];}
+  Object.assign(P.dipole,{spread:m.sp,arm1:m.a1,height:m.hC,shape:'flat',feedSys:v.feedSys,mm:{D:m.D,E:m.E,fix:v.fix,rope:0.3,hmin:2,L:v.L||undefined,tie:[m.e1.pos,m.e2.pos],names:[m.e1.id,m.e2.id]}});state.fitMsg='';
+  if(DXRES[t])DXRES[t].key=dxKey(t);   // height, shape and feed follow the masts here; the list stays valid
+  state.sel=DX[i][1];$('selAz').value=state.sel;state.el=10;$('elSel').value=10;state.dxOn[t]='mm:'+k+':'+vk;syncSliders();
+  const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h)h.textContent=`Ustawione: ${m.label}, ${v.fix?'najdłuższy drut z eATU':'rezonansowy'}; środek na ${m.hC.toFixed(1)} m, końce na ${m.E.map(e=>e.toFixed(1)).join(' i ')} m; wybrany kierunek ${DXSHORT[i]} (${DX[i][1]}°), gdzie ten układ daje najwięcej. `+(note?note+' ':'')+'Pełny wynik z pozostałymi antenami i metalem widać na wykresach.';
+  renderDX(t);recompute();}
+function applyDX(t,i,k,rr){const d=DXRES[t]&&DXRES[t][i],r=rr||(d&&d.opts[k]);if(!r||r.none)return;if(!rr&&r.mmRef){applyMM(t,r.mmRef[0],r.mmRef[1],i);state.dxOn[t]=i+':'+k;renderDX(t);return;}if(t==='dipole')P.dipole.mm=null;state.dxOn=state.dxOn||{};state.dxOn[t]=i+':'+k;let note='';
   if(t==='dipole'){if(r.q.mast){const x=assignMast('dipole',r.q.mast);note=x&&x.err?x.err:'';}else{delete state.mastAssign.dipole;P.dipole.cx=r.q.pos[0];P.dipole.cy=r.q.pos[1];}P.dipole.spread=r.sp;P.dipole.arm1=r.a1;state.fitMsg='';}
   else if(t==='delta'){if(r.q.mast){const x=assignMast('delta',r.q.mast);note=typeof x==='string'?x:'';}else{delete state.mastAssign.delta;P.delta.cx=r.q.pos[0];P.delta.cy=r.q.pos[1];}Object.assign(P.delta,{bottom:r.bottom,feed:r.feed,orient:r.orient},P.delta.mb?{}:{balun:r.balun});}
   else{const C=P.hdelta.corners;P.hdelta.corners=[0,1,2].map(j=>C[(r.rot+j)%3]);P.hdelta.feedPos=r.fp;{const key=DXRES.hdelta.key;DXRES.hdelta=DXRES.hdelta.map(q=>({...q,opts:q.opts.map(o=>o&&{...o,rot:(o.rot-r.rot+3)%3})}));DXRES.hdelta.key=key;}}
@@ -1614,7 +1649,7 @@ function applyDX(t,i,k,rr){const d=DXRES[t]&&DXRES[t][i],r=rr||(d&&d.opts[k]);if
   const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h)h.textContent=`Ustawione dla ${DXSHORT[i]} (${DX[i][1]}°): ${r.q&&r.q.label?r.q.label:'delta pozioma'}. `+(note?note+' ':'')+'Pełny wynik z pozostałymi antenami i metalem widać na wykresach.';
   renderDX(t);recompute();}
 document.addEventListener('click',e=>{const g=e.target.closest('.dxgo');if(g){if(!NEC.ok){document.querySelector(`.dxhint[data-t="${g.dataset.t}"]`).textContent='Silnik NEC-2 jeszcze się ładuje.';return;}optimizeDX(g.dataset.t);return;}
-  const r=e.target.closest('.dxrow');if(r){if(r.dataset.mm!=null)applyMM(r.dataset.t,+r.dataset.mm);else applyDX(r.dataset.t,+r.dataset.i,+(r.dataset.k||0));}});
+  const r=e.target.closest('.dxrow');if(r){if(r.dataset.mm!=null)applyMM(r.dataset.t,+r.dataset.mm,+(r.dataset.v||0));else applyDX(r.dataset.t,+r.dataset.i,+(r.dataset.k||0));}});
 const cdiv=(k,Z)=>{const d=Z.R*Z.R+Z.X*Z.X;return {R:k*Z.R/d,X:-k*Z.X/d};};
 // Cubex manual, Table I: λ/4 of 75 Ω RG-11 (VF 0.66) on 10/12/15 m, 50 Ω directly on 17/20 m
 const QSTUB={'10':172.72,'12':202.74,'15':233.68};
@@ -1627,7 +1662,7 @@ async function recompute(){dxStale();
   if((state.engine==='nec'||t==='hex'||t==='quad'||t==='hdelta'||(t==='delta'&&p.mb))&&NEC.ok){
     document.body.classList.add('busy');$('necHint').textContent='Liczę NEC-2…'+(t==='quad'&&p.multi?' Quad z pętlami wszystkich pasm liczy się dłużej, zwykle kilka do kilkunastu sekund.':'');
     NBR=null;
-    const pc={...p,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r};if(t==='hdelta')pc.corners=hdCorners();if(t==='delta'&&p.mb)pc.balun=4;
+    const pc={...p,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r};if(t==='hdelta')pc.corners=hdCorners();if(t==='dipole'&&p.mm)pc.mm={D:p.mm.D,E:p.mm.E,fix:p.mm.fix,rope:p.mm.rope,hmin:p.mm.hmin,L:p.mm.L,vf:wireVF(p.f)};if(t==='delta'&&p.mb)pc.balun=4;
     const mx=metalExtra(t,p);
     try{NECR=await necAnalyze(t,pc,wireRadius(),GROUNDS[state.ground],mx);
       const nbs=nbList(t);
@@ -1642,7 +1677,7 @@ async function recompute(){dxStale();
     const beam=beamOf(t), vf=t==='delta'?dVF(p):t==='dipole'?wireVF(p.f):1, inf=NECR.info;
     const lamT=299.8/p.f, ant={segs:reduceSegs(rotateSegs(NECR.segs,beam),lamT),zc:NECR.zc,lossDb:p.lossDb||0,nec:true,...inf};
     if(inf.kind==='delta')Object.assign(ant,{Pbare:inf.Pe,vf,P:inf.Pe*vf});
-    if(inf.kind==='dipole')Object.assign(ant,{Lbare:inf.Le,vf,Lphys:inf.Le*vf});
+    if(inf.kind==='dipole')Object.assign(ant,inf.mm?{Lbare:(inf.mm.Lph[0]+inf.mm.Lph[1])/vf,vf,Lphys:inf.mm.Lph[0]+inf.mm.Lph[1]}:{Lbare:inf.Le,vf,Lphys:inf.Le*vf});
     const balR=(t==='hdelta'||(t==='delta'&&p.mb))?4:t==='delta'?(p.balun||1):1, useAtu=(t==='dipole'&&p.feedSys==='atu')||((t==='hdelta'||(t==='delta'&&p.mb))&&p.match==='eatu');
     const atuPre=useAtu?lNetwork({R:NECR.Z.R/balR,X:NECR.Z.X/balR},p.f,50,P.eatu.QL):null;
     NECR.stub=t==='quad'?quadStub(p):null; NECR.Zm=NECR.stub?cdiv(75*75,NECR.Z):null;
@@ -1767,9 +1802,10 @@ function draw(){
     const L=dipoleLayout(g), Pg=SITECFG.parcel;
     const where=hasM?'z masztu '+mastFor('dipole',p).id:'ze środka ('+(p.cx>=0?'+':'')+p.cx.toFixed(1)+' E, '+(p.cy>=0?'+':'')+p.cy.toFixed(1)+' N od środka działki)';
     let fitTxt='Ramię w rzucie z góry: '+L.reach.toFixed(1)+' m '+where+'.';
-    if(Pg){const bad=L.arms.filter(r=>!r.inside||r.ray<L.reach);
-      fitTxt+=!L.centerIn?' Środek dipola jest poza działką.':bad.length?' '+bad.map((r,k)=>`${k?'ramię':'Ramię'} ${r.i} wychodzi poza działkę o ${(L.reach-r.ray).toFixed(1)} m`).join(', ')+'.':' Oba ramiona mieszczą się w działce (zapas '+Math.min(...L.arms.map(r=>r.ray-L.reach)).toFixed(1)+' m wzdłuż ramion).';}
-    $('pFitHint').textContent=(state.fitMsg?state.fitMsg+' ':'')+fitTxt;$('pFitHint').classList.toggle('err',!!(Pg&&(!L.centerIn||L.arms.some(r=>!r.inside||r.ray<L.reach))));
+    if(Pg){const bad=L.arms.filter(r=>!r.inside||r.ray<r.reach);
+      fitTxt+=!L.centerIn?' Środek dipola jest poza działką.':bad.length?' '+bad.map((r,k)=>`${k?'ramię':'Ramię'} ${r.i} wychodzi poza działkę o ${(r.reach-r.ray).toFixed(1)} m`).join(', ')+'.':' Oba ramiona mieszczą się w działce (zapas '+Math.min(...L.arms.map(r=>r.ray-r.reach)).toFixed(1)+' m wzdłuż ramion).';}
+    if(L.mm&&p.mm)fitTxt=`Rozpięty między masztami${p.mm.fix?', najdłuższy drut, jaki się mieści, zasilanie przez eATU':', rezonansowy'}: `+L.arms.map((r,i)=>`ramię ${r.i} do ${p.mm.names[i]}: ${L.mm.Lph[i].toFixed(1)} m drutu${L.mm.drop[i]>0.05?`, w tym ${L.mm.drop[i].toFixed(1)} m opuszczone pionowo przy maszcie`:''}, linka ${Math.max(0,p.mm.D[i]-r.reach).toFixed(1)} m, koniec na ${p.mm.E[i].toFixed(1)} m`).join('; ')+`. Środek na ${p.height.toFixed(1)} m.`;
+    $('pFitHint').textContent=(state.fitMsg?state.fitMsg+' ':'')+fitTxt;$('pFitHint').classList.toggle('err',!!(Pg&&(!L.centerIn||L.arms.some(r=>!r.inside||r.ray<r.reach))));
     $('pFitA').hidden=$('pFitB').hidden=!Pg;
     geoHtml=`<span>rezonans</span><b>${p.f.toFixed(3)} MHz</b><span>${g.nec?'długość el. (NEC, X=0)':'goły drut (143/f)'}</span><b>${g.Lbare.toFixed(2)} m</b><span>skrócenie izolacji</span><b>× ${g.vf.toFixed(3)}</b><span>długość do cięcia</span><b>${g.Lphys.toFixed(2)} m</b><span>ramię ×2</span><b>${(g.Lphys/2).toFixed(2)} m</b><span>wysokość środka</span><b>${p.height.toFixed(1)} m</b><span>wysokość w λ</span><b>${(p.height/lam).toFixed(2)} λ</b>`+
       (p.shape==='invv'?`<span>końce na</span><b>${g.endH.toFixed(1)} m</b><span>kąt odwróconego V (w pionie)</span><b>${(180-2*g.droop).toFixed(0)}°</b>`:'')+
@@ -2016,6 +2052,8 @@ function drawPlan(){
     for(const r of L.arms){const bad=SITECFG.parcel&&(!r.inside||r.ray<r.reach);x.strokeStyle=bad?css('--warn'):css('--accent');x.lineWidth=4;x.beginPath();x.moveTo(X(L.o[0]),Y(L.o[1]));x.lineTo(X(r.end[0]),Y(r.end[1]));x.stroke();
       x.fillStyle=x.strokeStyle;x.beginPath();x.arc(X(r.end[0]),Y(r.end[1]),4,0,7);x.fill();
       if(Rm<=60){x.fillStyle=css('--ink');x.font='600 11px '+css('--sans');x.textAlign='center';x.textBaseline='middle';const k=1+12/Math.max(1,r.reach*sc);x.fillText(String(r.i),X(L.o[0]+(r.end[0]-L.o[0])*k),Y(L.o[1]+(r.end[1]-L.o[1])*k));x.textBaseline='alphabetic';}}
+    if(L.mm&&P.dipole.mm&&P.dipole.mm.tie){x.strokeStyle=css('--muted');x.lineWidth=1.5;x.setLineDash([3,3]);L.arms.forEach((r,i)=>{const T=P.dipole.mm.tie[i];x.beginPath();x.moveTo(X(r.end[0]),Y(r.end[1]));x.lineTo(X(T[0]),Y(T[1]));x.stroke();
+        if(L.mm.drop[i]>0.05&&Rm<=60){x.setLineDash([]);x.fillStyle=css('--ink');x.font='11px '+css('--sans');x.textAlign='left';x.fillText('↓ '+L.mm.drop[i].toFixed(1)+' m',X(r.end[0])+6,Y(r.end[1])+14);x.setLineDash([3,3]);}});x.setLineDash([]);}
     x.lineCap='butt';x.fillStyle=css('--accent');x.beginPath();x.arc(X(L.o[0]),Y(L.o[1]),4,0,7);x.fill();}
   if(SITECFG.parcel){x.strokeStyle=css('--warn');x.lineWidth=2;x.setLineDash([]);x.beginPath();SITECFG.parcel.forEach((q,i)=>i?x.lineTo(X(q[0]),Y(q[1])):x.moveTo(X(q[0]),Y(q[1])));x.closePath();x.stroke();}
   x.restore();
@@ -2057,17 +2095,17 @@ $('hdCorners').addEventListener('change',e=>{const el=e.target,row=el.closest('.
   else{const v=parseFloat(String(el.value).replace(',','.'));if(isNaN(v))return;c[el.dataset.f]=el.dataset.f==='h'?Math.max(1,Math.min(40,v)):Math.max(-150,Math.min(150,v));}
   recompute();});
 $('dBalun').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.delta.balun=+b.dataset.v;recompute();});
-$('pFeedSys').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.dipole.feedSys=b.dataset.v;recompute();});segInit('feed','delta','feed');segInit('pBand','dipole','f');segInit('pShape','dipole','shape');$('yDesign').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const nd=b.dataset.v,od=P.y15.design;if(nd===od)return;
+$('pFeedSys').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.dipole.feedSys=b.dataset.v;recompute();});segInit('feed','delta','feed');segInit('pBand','dipole','f');segInit('pShape','dipole','shape');$('pShape').addEventListener('click',()=>{P.dipole.mm=null;},true);$('yDesign').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const nd=b.dataset.v,od=P.y15.design;if(nd===od)return;
   P.y15.per[od]={height:P.y15.height,beamAz:P.y15.beamAz};Object.assign(P.y15,{design:nd},P.y15.per[nd]);[...$('yDesign').children].forEach(x=>x.setAttribute('aria-pressed',x===b));state.sel=beamOf('y15');recompute();});
 const bindRange=(id,tab,key)=>$(id).addEventListener('input',e=>{P[tab][key]=parseFloat(e.target.value);deb();});
 bindRange('apex','delta','apex');bindRange('bottom','delta','bottom');bindRange('orient','delta','orient');
 bindRange('pHeight','dipole','height');
-$('pWire').addEventListener('input',e=>{setBeamOf('dipole',+e.target.value);state.fitMsg='';deb();});
-$('pSpread').addEventListener('input',e=>{const b=beamOf('dipole');P.dipole.spread=+e.target.value;setBeamOf('dipole',b);state.fitMsg='';deb();});
+$('pWire').addEventListener('input',e=>{P.dipole.mm=null;setBeamOf('dipole',+e.target.value);state.fitMsg='';deb();});
+$('pSpread').addEventListener('input',e=>{P.dipole.mm=null;const b=beamOf('dipole');P.dipole.spread=+e.target.value;setBeamOf('dipole',b);state.fitMsg='';deb();});
 for(const id of ['pA1','pA2'])$(id).addEventListener('change',()=>{const a=parseFloat($('pA1').value),b=parseFloat($('pA2').value);if(isNaN(a)||isNaN(b))return;
-  let a1=norm(a),s=norm(b-a1);if(s>180){a1=norm(b);s=360-s;}if(s<30){state.fitMsg='Kąt między ramionami musi mieć co najmniej 30°.';s=30;}else state.fitMsg='';P.dipole.arm1=a1;P.dipole.spread=s;recompute();});
-for(const [id,k] of [['pCx','cx'],['pCy','cy']])$(id).addEventListener('change',e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(!isNaN(v)){P.dipole[k]=Math.max(-100,Math.min(100,v));state.fitMsg='';if(state.nb.type)nbFromMasts();recompute();}});
-for(const [id,keep] of [['pFitA',true],['pFitB',false]])$(id).addEventListener('click',async()=>{let r;
+  let a1=norm(a),s=norm(b-a1);if(s>180){a1=norm(b);s=360-s;}if(s<30){state.fitMsg='Kąt między ramionami musi mieć co najmniej 30°.';s=30;}else state.fitMsg='';P.dipole.mm=null;P.dipole.arm1=a1;P.dipole.spread=s;recompute();});
+for(const [id,k] of [['pCx','cx'],['pCy','cy']])$(id).addEventListener('change',e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(!isNaN(v)){P.dipole.mm=null;P.dipole[k]=Math.max(-100,Math.min(100,v));state.fitMsg='';if(state.nb.type)nbFromMasts();recompute();}});
+for(const [id,keep] of [['pFitA',true],['pFitB',false]])$(id).addEventListener('click',async()=>{let r;P.dipole.mm=null;
   for(let k=0;k<4;k++){r=fitDipole(keep);if(!r||r.err)break;await recompute();   // a bent dipole resonates a little longer: refit with the new length
     const L=dipoleLayout(RT.geo);if(L.arms.every(a=>a.ray-a.reach>=FIT_MARGIN*0.6))break;}
   if(!r)return;state.fitMsg=r.err?r.err:(keep?'Kąt dobrany przy zachowanym kierunku: ':'Najlepsze ułożenie: ')+`${r.s}°, wiązka ${r.beam}°, zapas ok. ${FIT_MARGIN} m od granicy.`;draw();});
