@@ -1238,6 +1238,16 @@ function setupCanvas(c){const dpr=Math.min(2,window.devicePixelRatio||1);const w
   const ratio=c._base[1]/c._base[0]; const H=w*ratio;
   c.width=Math.round(w*dpr);c.height=Math.round(H*dpr);const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);return{x,w,h:H};}
 
+// Fewer, longer current elements for the terrain-correction model (it runs on the page thread): drop segments with negligible current,
+// merge consecutive collinear segments up to λ/12. NEC results themselves are untouched.
+function reduceSegs(segs,lam){const mag=q=>Math.hypot(...(q.Ic||[1,0]))*Math.hypot(...q.dl);let mx=0;for(const q of segs)mx=Math.max(mx,mag(q));
+  const out=[];let g=null;const flush=()=>{if(!g)return;const L=Math.hypot(...g.dl);out.push({r:g.r.map(v=>v/g.w),dl:g.dl,I:1,Ic:[g.ic[0]/L,g.ic[1]/L]});g=null;};
+  for(const q of segs){const m=mag(q);if(m<mx*0.004){flush();continue;}const l=Math.hypot(...q.dl),ic=q.Ic||[1,0];
+    if(g){const gl=Math.hypot(...g.dl),cosA=(g.dl[0]*q.dl[0]+g.dl[1]*q.dl[1]+g.dl[2]*q.dl[2])/(gl*l),end=g.last.r.map((v,i)=>v+g.last.dl[i]/2),st=q.r.map((v,i)=>v-q.dl[i]/2);
+      if(cosA>0.999&&Math.hypot(end[0]-st[0],end[1]-st[1],end[2]-st[2])<1e-3*lam&&gl+l<=lam/12){g.dl=g.dl.map((v,i)=>v+q.dl[i]);g.r=g.r.map((v,i)=>v+q.r[i]*l);g.w+=l;g.ic=[g.ic[0]+ic[0]*l,g.ic[1]+ic[1]*l];g.last=q;continue;}
+      flush();}
+    g={dl:q.dl.slice(),r:q.r.map(v=>v*l),w:l,ic:[ic[0]*l,ic[1]*l],last:q};}
+  flush();return out;}
 const cdiv=(k,Z)=>{const d=Z.R*Z.R+Z.X*Z.X;return {R:k*Z.R/d,X:-k*Z.X/d};};
 // Cubex manual, Table I: λ/4 of 75 Ω RG-11 (VF 0.66) on 10/12/15 m, 50 Ω directly on 17/20 m
 const QSTUB={'10':172.72,'12':202.74,'15':233.68};
@@ -1248,7 +1258,7 @@ async function recompute(){
   const my=++recId, t=state.tab, p=P[t], o={f:p.f,ground:state.ground};
   NECR=null;
   if((state.engine==='nec'||t==='hex'||t==='quad')&&NEC.ok){
-    document.body.classList.add('busy');$('necHint').textContent='Liczę NEC-2…';
+    document.body.classList.add('busy');$('necHint').textContent='Liczę NEC-2…'+(t==='quad'&&p.multi?' Quad z pętlami wszystkich pasm liczy się dłużej, zwykle kilka do kilkunastu sekund.':'');
     NBR=null;
     const pc={...p,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r};
     const mx=metalExtra(t,p);
@@ -1263,7 +1273,7 @@ async function recompute(){
   }
   if(NECR){
     const beam=beamOf(t), vf=(t==='delta'||t==='dipole')?wireVF(p.f):1, inf=NECR.info;
-    const ant={segs:rotateSegs(NECR.segs,beam),zc:NECR.zc,lossDb:p.lossDb||0,nec:true,...inf};
+    const lamT=299.8/p.f, ant={segs:reduceSegs(rotateSegs(NECR.segs,beam),lamT),zc:NECR.zc,lossDb:p.lossDb||0,nec:true,...inf};
     if(inf.kind==='delta')Object.assign(ant,{Pbare:inf.Pe,vf,P:inf.Pe*vf});
     if(inf.kind==='dipole')Object.assign(ant,{Lbare:inf.Le,vf,Lphys:inf.Le*vf});
     const atuPre=(t==='dipole'&&p.feedSys==='atu')?lNetwork(NECR.Z,p.f,50,P.eatu.QL):null;
@@ -1276,7 +1286,7 @@ async function recompute(){
     RF={AZ:St.AZ,EL:St.EL,G:Gn,geo:ant};
     RT={AZ:St.AZ,EL:St.EL,G:Gn.map((row,i)=>row.map((g,j)=>Math.max(-60,g+Math.max(-30,Math.min(12,St.G[i][j]-Sf.G[i][j]))))),geo:ant};
     RNB=null;
-    if(NBR&&NBR.base){const B=NBR.base, Sb=compute({...ant,segs:rotateSegs(B.segs,beam),zc:B.zc},o,TT,false), Sbf=compute({...ant,segs:rotateSegs(B.segs,beam),zc:B.zc},o,TT,true);
+    if(NBR&&NBR.base){const B=NBR.base, bs=reduceSegs(rotateSegs(B.segs,beam),lamT), Sb=compute({...ant,segs:bs,zc:B.zc},o,TT,false), Sbf=compute({...ant,segs:bs,zc:B.zc},o,TT,true);
       RNB={AZ:St.AZ,EL:St.EL,G:St.AZ.map((az,i)=>St.EL.map((el,j)=>Math.max(-60,necGain(B,az-beam,el)-loss+Math.max(-30,Math.min(12,Sb.G[i][j]-Sbf.G[i][j])))))};}
     const Z=NECR.Zm||NECR.Z, Zref=t==='delta'?50*(p.balun||1):50, rho=Math.hypot(Z.R-Zref,Z.X)/Math.hypot(Z.R+Zref,Z.X);
     NECR.zref=Zref; NECR.swr=(1+rho)/(1-rho); NECR.atu=null;
@@ -1721,7 +1731,7 @@ function drawMastPlan(){const c=$('mastPlan');if(!c||state.view!=='masts')return
 $('mastPlan').addEventListener('click',e=>{const c=$('mastPlan'),r=c.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=null;
   for(const q of (c._m||[])){const d=Math.hypot(q.px-mx,q.py-my);if(d<24&&(!best||d<best.d))best={id:q.id,d};}
   if(!best)return;state.mastSelId=best.id;renderMasts();const card=document.querySelector(`.mcard[data-m="${best.id}"]`);if(card)card.scrollIntoView({block:'nearest',behavior:'smooth'});});
-function syncSliders(){for(const [id,tab,key] of [['apex','delta','apex'],['bottom','delta','bottom'],['orient','delta','orient'],['pHeight','dipole','height'],['yHeight','y15','height'],['yRange','y15','beamAz'],['tHeight','y10','height'],['tRange','y10','beamAz'],['aHeight','a3s','height'],['aRange','a3s','beamAz'],['hHeight','hex','height'],['hRange','hex','beamAz'],['qHeight','quad','height'],['qRange','quad','beamAz']]){const el=$(id);if(el&&P[tab]&&P[tab][key]!=null)el.value=P[tab][key];}
+function syncSliders(){for(const [id,tab,key] of [['apex','delta','apex'],['bottom','delta','bottom'],['orient','delta','orient'],['pHeight','dipole','height'],['yHeight','y15','height'],['yRange','y15','beamAz'],['tHeight','y10','height'],['tRange','y10','beamAz'],['aHeight','a3s','height'],['aRange','a3s','beamAz'],['hHeight','hex','height'],['hRange','hex','beamAz'],['qHeight','quad','height'],['qRange','quad','beamAz']]){const el=$(id);if(el&&P[tab]&&P[tab][key]!=null){el.value=P[tab][key];const oo=$(id+'O');if(oo&&/Height$/.test(id))oo.textContent=(+P[tab][key]).toFixed(1)+' m';else if(oo&&/Range$/.test(id))oo.textContent=P[tab][key]+'°';}}
   if($('yDesign'))[...$('yDesign').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===P.y15.design));}
 function setTab(t){if(t==='masts'){showView('masts');return;}
   if(state.view!=='ant')showView('ant');state.mastMsg='';state.tab=t;syncSliders();
