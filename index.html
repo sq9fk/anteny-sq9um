@@ -125,6 +125,11 @@ tbody tr{cursor:pointer}
 .dxrow b{font-weight:600}
 .dxrow .g{float:right;font-family:var(--mono)}
 .dxrow .warn{color:var(--warn)}
+.dxdir{display:flex;flex-direction:column;gap:4px;padding:6px;border:1px solid var(--line);border-radius:6px}
+.dxdir .dxh{font-weight:600;font-size:13px}
+.dxdir .dxrow{font-size:12.5px;padding:6px 8px}
+.dxno{font-size:12px;color:var(--muted);padding:2px 8px}
+.dxrow .best{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.04em}
 .dxrow .ls{color:var(--muted)}
 .dxrow.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .planbtn{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--accent);border-radius:5px;background:var(--accent-soft);color:var(--ink);cursor:pointer;align-self:flex-start}
@@ -1475,11 +1480,17 @@ function dxPositions(tab){const Pg=SITECFG.parcel,need=dxNeed(),out=[];
     if(!inPoly(q,Pg)||edgeDist(q,Pg)<1.5||need(x,y)>0)continue;const nm=nearestMast(q);if(nm&&nm.d<2)continue;
     out.push({pos:q,label:nm?`nowy maszt ${nm.d.toFixed(1).replace('.',',')} m od ${nm.m.id} w kierunku ${nm.az}°`:`punkt ${x>=0?x.toFixed(1)+' E':(-x).toFixed(1)+' W'}, ${y>=0?y.toFixed(1)+' N':(-y).toFixed(1)+' S'} od środka działki`.replace(/\./g,',')});}
   return out;}
-// best layout per DX direction; an existing mast wins when it is within 0.3 dB of the best new support point
-function dxAcc(n,cur){const all=Array(n).fill(null),mast=Array(n).fill(null);
-  return {add(q,mk,gi,bonus=0){let r=null;for(let i=0;i<n;i++){const g0=gi(i),g=g0+(q.mast&&q.mast===cur?0.05:0)+bonus;
-      if(!all[i]||g>all[i].gs){r=r||mk();all[i]={q,r,g:g0,gs:g};}if(q.mast&&(!mast[i]||g>mast[i].gs)){r=r||mk();mast[i]={q,r,g:g0,gs:g};}}},
-    res(){return all.map((a,i)=>{if(!a)return null;const m=mast[i],p=m&&m.gs>=a.gs-0.3?m:a,o={...p.r,q:p.q,g:p.g};if(!p.q.mast&&m)o.alt={label:m.q.label,g:m.g};else if(!p.q.mast&&HAS_MASTS)o.alt={none:true};return o;});}};}
+// best layout per DX direction, kept separately for every mast (M1, M2, M3 in order) and for the best new support point;
+// the recommended one is the best mast; a new point is shown only when no mast fits or it beats the best mast by more than 0.3 dB
+function dxWhy(t,mid){const o=mastOcc(mid);if(t==='dipole'&&o.main&&NO_DIPOLE.has(o.main))return 'wisi na nim delta, dipola nie da się dołożyć';return 'nie mieści się (granica działki, zabudowania albo drzewa)';}
+function dxAcc(n){const best={},why={};
+  return {why,add(q,mk,gi,bonus=0){const K=q.mast||'new',B=best[K]||(best[K]=Array(n).fill(null));let r=null;
+      for(let i=0;i<n;i++){const g0=gi(i),g=g0+bonus;if(!B[i]||g>B[i].gs){r=r||mk();B[i]={...r,q,g:g0,gs:g};}}},
+    res(t){const M=HAS_MASTS?SITECFG.masts:[];return Array.from({length:n},(_,i)=>{
+      const opts=M.map(m=>(best[m.id]&&best[m.id][i])||{none:true,q:{mast:m.id,label:'maszt '+m.id},why:why[m.id]||dxWhy(t,m.id)});
+      const bm=opts.filter(o=>!o.none).sort((a,b)=>b.gs-a.gs)[0]||null,nw=best.new&&best.new[i];
+      if(nw&&(!bm||nw.gs>bm.gs+0.3))opts.push({...nw,gain:bm?nw.g-bm.g:null});
+      return {opts,def:bm?opts.indexOf(bm):opts.findIndex(o=>!o.none)};});}};}
 function feedLossOf(t,p,Z){const cl=g=>coaxLoss(state.coax.type,p.f,state.coax.len,Math.min(0.999,g)).TL,gm=(Z,R0)=>Math.hypot(Z.R-R0,Z.X)/Math.hypot(Z.R+R0,Z.X);
   const atu=(Z,k)=>{const a=lNetwork({R:Z.R/k,X:Z.X/k},p.f,50,P.eatu.QL);return (a?a.lossDb:3)+cl(0);};
   if(t==='dipole')return p.feedSys==='atu'?atu(Z,1):cl(gm(Z,50));
@@ -1497,30 +1508,35 @@ async function optimizeDX(t){const my=++dxRun,p0=P[t],lam=299.8/p0.f,gr=GROUNDS[
       for(let beam=0;beam<360;beam+=5)G.push(dxScore(res,segs0,beam,o,TT,loss));rows.push({sp,reach,loss,G,droop:res.info.droop});await new Promise(r=>setTimeout(r,0));}
     const pos=dxPositions('dipole'),need=dxNeed(),h=p0.height,tn=Math.tan((rows[0].droop||0)*RAD),D=pos.map(q=>{const d=[];for(let a=0;a<360;a++)d[a]=SITECFG.parcel?dxFree(q.pos,a,x=>h-x*tn,need):Infinity;return d;});
     const gAt=(r,beam,i)=>{const x=beam/5,k0=Math.floor(x)%72,k1=(k0+1)%72,w=x-Math.floor(x);return r.G[k0][i]*(1-w)+r.G[k1][i]*w;};   // 1° steps, gain interpolated from the 5° NEC grid
-    const acc=dxAcc(AZ.length,state.mastAssign.dipole);let nfit=0;
+    const acc=dxAcc(AZ.length);let nfit=0;
     pos.forEach((q,qi)=>rows.forEach(r=>{for(let beam=0;beam<(r.sp===180?180:360);beam++){const a1=norm(beam-Math.floor(r.sp/2)),a2=norm(a1+r.sp);if(D[qi][a1]>=r.reach&&D[qi][a2]>=r.reach){nfit++;
       acc.add(q,()=>({sp:r.sp,beam,a1,a2,reach:r.reach,loss:r.loss}),i=>gAt(r,beam,i),r.sp===180?0.01:0);}}}));
-    DXRES.dipole=acc.res();const fitsAt={length:nfit};
+    pos.forEach((q,qi)=>{if(!q.mast||!SITECFG.parcel)return;const Dp=[];for(let a=0;a<360;a++)Dp[a]=parcelRay(q.pos,a)-FIT_MARGIN;
+      const fitsP=rows.some(r=>{for(let b=0;b<360;b++){const a1=norm(b-Math.floor(r.sp/2)),a2=norm(a1+r.sp);if(Dp[a1]>=r.reach&&Dp[a2]>=r.reach)return true;}return false;});
+      acc.why[q.mast]=fitsP?'w granicach działki by się zmieścił, ale każde ułożenie ramion zahacza o drzewa albo zabudowania (drut musi być 0,5 m nad koroną i 1 m nad dachem)':`ramiona (${fmtS(rows[rows.length-1].reach)}–${fmtS(rows[0].reach)} m w rzucie) nie mieszczą się w granicach działki nawet jako V 30°`;});
+    DXRES.dipole=acc.res('dipole');const fitsAt={length:nfit};
     if(!fitsAt.length){const r30=rows[rows.length-1];DXRES.dipole.why=`Ramię ma w rzucie ${fmtS(rows[0].reach)} m (V 30°: ${fmtS(r30.reach)} m), a z żadnego ${HAS_MASTS?'masztu ani nowego punktu':'punktu działki'} nie ma tyle wolnego miejsca w dwóch kierunkach naraz (granica działki, zabudowania, drzewa). Spróbuj odwróconego V, wyższego pasma albo zagięcia końców (tego strona nie liczy).`;}
   } else if(t==='delta'){const vf=dVF(p0),B=[];for(let b=1;b<=Math.min(5,p0.apex-1)+1e-9;b+=1)B.push(b);const F=['corner','side','base'];let k=0;
     for(const feed of F)for(const bottom of B){hint.textContent=`Liczę NEC-2… wariant ${++k} z ${F.length*B.length}`;const res=await necAnalyze('delta',{...pc0,bottom,feed},wireRadius(),gr);if(my!==dxRun)return;
       const loss=feedLossOf('delta',p0,res.Z),segs0=reduceSegs(res.segs,lam),halfB=res.info.b*vf/2;const s1=Math.hypot(res.Z.R-50,res.Z.X)/Math.hypot(res.Z.R+50,res.Z.X),s4=Math.hypot(res.Z.R-200,res.Z.X)/Math.hypot(res.Z.R+200,res.Z.X);
       for(let orient=0;orient<180;orient+=5)rows.push({bottom:res.info.bottom,feed,orient,halfB,loss,balun:s4<s1?4:1,g:dxScore(res,segs0,(orient+270)%360,o,TT,loss)});await new Promise(r=>setTimeout(r,0));}
-    const Pg=SITECFG.parcel,pos=dxPositions('delta'),need=dxNeed(),acc=dxAcc(AZ.length,state.mastAssign.delta);
+    const Pg=SITECFG.parcel,pos=dxPositions('delta'),need=dxNeed(),acc=dxAcc(AZ.length);
     // the base wire (lowest, at 'bottom' height) must pass the obstacles; the sloping wires are higher everywhere above it
     const FR=pos.map(q=>{const m={};return (az,b)=>{const k=az+'|'+b;if(m[k]==null)m[k]=Pg?dxFree(q.pos,az,()=>b,need):Infinity;return m[k];};});
-    pos.forEach((q,qi)=>rows.forEach(r=>{const tt=r.orient*RAD,d=[Math.sin(tt)*r.halfB,Math.cos(tt)*r.halfB];
-      if(Pg&&![[q.pos[0]+d[0],q.pos[1]+d[1]],[q.pos[0]-d[0],q.pos[1]-d[1]]].every(c=>inPoly(c,Pg)&&edgeDist(c,Pg)>=FIT_MARGIN))return;
-      if(FR[qi](r.orient,r.bottom)<r.halfB||FR[qi]((r.orient+180)%360,r.bottom)<r.halfB)return;acc.add(q,()=>r,i=>r.g[i]);}));
-    DXRES.delta=acc.res();
+    const nEdge={},nObst={};
+    pos.forEach((q,qi)=>rows.forEach(r=>{const tt=r.orient*RAD,d=[Math.sin(tt)*r.halfB,Math.cos(tt)*r.halfB],K=q.mast||'new';
+      if(Pg&&![[q.pos[0]+d[0],q.pos[1]+d[1]],[q.pos[0]-d[0],q.pos[1]-d[1]]].every(c=>inPoly(c,Pg)&&edgeDist(c,Pg)>=FIT_MARGIN))return;nEdge[K]=1;
+      if(FR[qi](r.orient,r.bottom)<r.halfB||FR[qi]((r.orient+180)%360,r.bottom)<r.halfB)return;nObst[K]=1;acc.add(q,()=>r,i=>r.g[i]);}));
+    pos.forEach(q=>{if(q.mast&&!nObst[q.mast])acc.why[q.mast]=nEdge[q.mast]?`narożniki mieszczą się w działce, ale dolny drut na 1–${Math.min(5,p0.apex-1)} m przy każdym obrocie zahacza o altanę, szopę albo drzewa`:`podstawa delty (${fmtS(2*rows[0].halfB)} m) wychodzi poza działkę przy każdym obrocie`;});
+    DXRES.delta=acc.res('delta');
   } else {const base=P.hdelta.corners,R0=hdCorners();let k=0;
     for(let rot=0;rot<3;rot++)for(const fp of ['corner','side']){hint.textContent=`Liczę NEC-2… zasilanie ${++k} z 6`;const C=[0,1,2].map(j=>R0[(rot+j)%3]);
       const res=await necAnalyze('hdelta',{...pc0,corners:C,feedPos:fp},wireRadius(),gr);if(my!==dxRun)return;
       {const loss=feedLossOf('hdelta',p0,res.Z);rows.push({rot,fp,loss,g:dxScore(res,reduceSegs(res.segs,lam),0,o,TT,loss)});}await new Promise(r=>setTimeout(r,0));}
-    DXRES.hdelta=AZ.map((az,i)=>{let best=null;for(const r of rows)if(!best||r.g[i]>best.g)best={...r,g:r.g[i]};return best;});}
+    DXRES.hdelta=AZ.map((az,i)=>{let best=null;for(const r of rows)if(!best||r.g[i]>best.g)best={...r,g:r.g[i]};return {opts:[best],def:0};});}
   DXRES[t].key=dxKey(t);
-  hint.textContent='Kliknij kierunek, aby ustawić antenę w najlepszym układzie. Wynik: średni zysk przy 5–15° w tym kierunku, z terenem, budynkami, drzewami i stratami w kablu'+(t==='dipole'?' albo eATU':'')+'. Bez pozostałych anten i metalu.';
-  {const L=DXRES[t].filter(Boolean).map(r=>r.loss);if(L.length&&Math.min(...L)>3)hint.textContent+=` Uwaga: straty zasilania ${fmtS(Math.min(...L))} dB i więcej, bo antena nie jest dopasowana na ${p0.f.toFixed(3)} MHz`+(t==='dipole'?(p0.feedSys!=='atu'?'. Spróbuj zasilania „bez baluna + eATU”.':'.'):(p0.match!=='eatu'?'. Spróbuj dopasowania „4:1 + eATU przy antenie”.':'.'));}
+  hint.textContent=(HAS_MASTS&&t!=='hdelta'?'Dla każdego kierunku najpierw maszty po kolei (M1, M2, M3), każdy z najlepszym dla niego ułożeniem; „polecany” to najlepszy z masztów. Nowy maszt pojawia się tylko wtedy, gdy żaden istniejący się nie mieści albo nowy daje ponad 0,3 dB więcej. ':'')+'Kliknij wiersz, aby ustawić antenę w tym układzie. Wynik: średni zysk przy 5–15° w tym kierunku, z terenem, budynkami, drzewami i stratami w kablu'+(t==='dipole'?' albo eATU':'')+'. Bez pozostałych anten i metalu.';
+  {const L=DXRES[t].flatMap(d=>d.opts.filter(o=>o&&!o.none).map(o=>o.loss));if(L.length&&Math.min(...L)>3)hint.textContent+=` Uwaga: straty zasilania ${fmtS(Math.min(...L))} dB i więcej, bo antena nie jest dopasowana na ${p0.f.toFixed(3)} MHz`+(t==='dipole'?(p0.feedSys!=='atu'?'. Spróbuj zasilania „bez baluna + eATU”.':'.'):(p0.match!=='eatu'?'. Spróbuj dopasowania „4:1 + eATU przy antenie”.':'.'));}
   renderDX(t);}
   catch(e){hint.classList.add('err');hint.textContent='Błąd: '+e.message;}
   finally{btn.disabled=false;}}
@@ -1529,17 +1545,19 @@ function dxLabel(t,r){if(!r)return 'nie mieści się w działce z żadnego miejs
   if(t==='dipole')return `<b>${r.q.label}</b>, ramiona na ${r.a1}° i ${r.a2}°${r.sp<180?` (V ${r.sp}°), wiązka ${r.beam}° i ${(r.beam+180)%360}°`:` (prosty), wiązka ${r.beam%180}° i ${r.beam%180+180}°`}`;
   if(t==='delta')return `<b>${r.q.label}</b>${busy()}, dolny drut ${r.orient}°–${r.orient+180}°, dół ${r.bottom.toFixed(1)} m, zasilanie: ${FEEDNAME[r.feed]}${P.delta.mb?'':', balun '+r.balun+':1'}`;
   const C=P.hdelta.corners,nm=j=>{const c=C[(r.rot+j)%3];return c.src!=='pt'?c.src:'narożnik '+((r.rot+j)%3+1);};return r.fp==='corner'?`zasilanie w narożniku <b>${nm(0)}</b>`:`zasilanie na środku boku <b>${nm(0)}–${nm(1)}</b>`;}
-function renderDX(t){const el=document.querySelector(`.dxlist[data-t="${t}"]`),R=DXRES[t];if(!el)return;if(!R){el.innerHTML='';return;}
-  el.innerHTML=R.map((r,i)=>`<button type="button" class="dxrow${state.dxOn&&state.dxOn[t]===i?' on':''}" data-t="${t}" data-i="${i}"${r?'':' disabled'}><span class="g">${r?fmtS(r.g)+' dBi':'–'}</span><b>${DXSHORT[i]} ${DX[i][1]}°</b><br>${dxLabel(t,r)}${r?`<span class="ls"> · straty zasilania ${fmtS(r.loss)} dB</span>`:''}${r&&r.alt?`<br><span class="ls">${r.alt.none?'z istniejących masztów się nie mieści (granica, zabudowania albo drzewa)':`z istniejącego masztu najlepiej ${r.alt.label}: ${fmtS(r.alt.g)} dBi`}</span>`:''}</button>`).join('');}
-function applyDX(t,i){const r=DXRES[t]&&DXRES[t][i];if(!r)return;state.dxOn=state.dxOn||{};state.dxOn[t]=i;let note='';
+function renderDX(t){const el=document.querySelector(`.dxlist[data-t="${t}"]`),R=DXRES[t];if(!el)return;if(!R){el.innerHTML='';return;}const on=state.dxOn&&state.dxOn[t];
+  el.innerHTML=R.map((d,i)=>`<div class="dxdir"><div class="dxh">${DXSHORT[i]} ${DX[i][1]}°</div>`+(d.opts.some(o=>o&&!o.none)?d.opts.map((r,k)=>r.none?`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`:
+    `<button type="button" class="dxrow${on===i+':'+k?' on':''}" data-t="${t}" data-i="${i}" data-k="${k}"><span class="g">${fmtS(r.g)} dBi</span>${k===d.def&&d.opts.length>1?'<span class="best">polecany</span> ':''}${dxLabel(t,r)}<span class="ls"> · straty zasilania ${fmtS(r.loss)} dB${r.gain!=null?` · o ${fmtS(r.gain)} dB więcej niż najlepszy maszt`:''}</span></button>`).join(''):
+    `<div class="dxno">${dxLabel(t,null)}</div>`+d.opts.filter(o=>o&&o.none).map(r=>`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`).join(''))+'</div>').join('');}
+function applyDX(t,i,k){const d=DXRES[t]&&DXRES[t][i],r=d&&d.opts[k];if(!r||r.none)return;state.dxOn=state.dxOn||{};state.dxOn[t]=i+':'+k;let note='';
   if(t==='dipole'){if(r.q.mast){const x=assignMast('dipole',r.q.mast);note=x&&x.err?x.err:'';}else{delete state.mastAssign.dipole;P.dipole.cx=r.q.pos[0];P.dipole.cy=r.q.pos[1];}P.dipole.spread=r.sp;P.dipole.arm1=r.a1;state.fitMsg='';}
   else if(t==='delta'){if(r.q.mast){const x=assignMast('delta',r.q.mast);note=typeof x==='string'?x:'';}else{delete state.mastAssign.delta;P.delta.cx=r.q.pos[0];P.delta.cy=r.q.pos[1];}Object.assign(P.delta,{bottom:r.bottom,feed:r.feed,orient:r.orient},P.delta.mb?{}:{balun:r.balun});}
-  else{const C=P.hdelta.corners;P.hdelta.corners=[0,1,2].map(j=>C[(r.rot+j)%3]);P.hdelta.feedPos=r.fp;{const k=DXRES.hdelta.key;DXRES.hdelta=DXRES.hdelta.map(q=>q&&{...q,rot:(q.rot-r.rot+3)%3});DXRES.hdelta.key=k;}}
+  else{const C=P.hdelta.corners;P.hdelta.corners=[0,1,2].map(j=>C[(r.rot+j)%3]);P.hdelta.feedPos=r.fp;{const key=DXRES.hdelta.key;DXRES.hdelta=DXRES.hdelta.map(q=>({...q,opts:q.opts.map(o=>o&&{...o,rot:(o.rot-r.rot+3)%3})}));DXRES.hdelta.key=key;}}
   state.sel=DX[i][1];$('selAz').value=state.sel;state.el=10;$('elSel').value=10;syncSliders();
-  const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h)h.textContent=`Ustawione dla ${DXSHORT[i]} (${DX[i][1]}°). `+(note?note+' ':'')+'Pełny wynik z pozostałymi antenami i metalem widać na wykresach.';
+  const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h)h.textContent=`Ustawione dla ${DXSHORT[i]} (${DX[i][1]}°): ${r.q&&r.q.label?r.q.label:'delta pozioma'}. `+(note?note+' ':'')+'Pełny wynik z pozostałymi antenami i metalem widać na wykresach.';
   renderDX(t);recompute();}
 document.addEventListener('click',e=>{const g=e.target.closest('.dxgo');if(g){if(!NEC.ok){document.querySelector(`.dxhint[data-t="${g.dataset.t}"]`).textContent='Silnik NEC-2 jeszcze się ładuje.';return;}optimizeDX(g.dataset.t);return;}
-  const r=e.target.closest('.dxrow');if(r)applyDX(r.dataset.t,+r.dataset.i);});
+  const r=e.target.closest('.dxrow');if(r)applyDX(r.dataset.t,+r.dataset.i,+(r.dataset.k||0));});
 const cdiv=(k,Z)=>{const d=Z.R*Z.R+Z.X*Z.X;return {R:k*Z.R/d,X:-k*Z.X/d};};
 // Cubex manual, Table I: λ/4 of 75 Ω RG-11 (VF 0.66) on 10/12/15 m, 50 Ω directly on 17/20 m
 const QSTUB={'10':172.72,'12':202.74,'15':233.68};
