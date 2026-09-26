@@ -105,6 +105,17 @@ tbody tr{cursor:pointer}
 .numg{display:grid;grid-template-columns:auto 78px auto;gap:6px 8px;align-items:center;justify-content:start;font-size:14px;color:var(--muted)}
 .numg input{width:78px;box-sizing:border-box;font:inherit;font-family:var(--mono);font-size:15px;padding:5px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
 .numg input:disabled{opacity:.6}
+.mview{display:grid;grid-template-columns:360px 1fr;gap:22px;align-items:start}
+@media (max-width:880px){.mview{grid-template-columns:1fr}}
+.mcards{display:flex;flex-direction:column;gap:12px}
+.mcard{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.mcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.mcard h3{margin:0;font-size:16px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.mcard h3 small{font-weight:500;color:var(--muted);font-size:12.5px;font-family:var(--mono)}
+.mcard select{font:inherit;font-size:15px;padding:5px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);width:100%}
+.mrow{display:grid;grid-template-columns:1fr 78px 20px;gap:6px 8px;align-items:center;font-size:14px;color:var(--muted)}
+.mrow input[type=number]{width:78px;box-sizing:border-box;font:inherit;font-family:var(--mono);font-size:15px;padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
+.mcard .warn{color:var(--warn);font-size:13px;margin:0}
 .planbtn{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--accent);border-radius:5px;background:var(--accent-soft);color:var(--ink);cursor:pointer;align-self:flex-start}
 .elctl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .elctl input{flex:1}
@@ -116,7 +127,7 @@ tbody tr{cursor:pointer}
 
 <div class="wrap">
   <header>
-    <h1><small id="eyebrow">Symulacja anteny na działce</small><span id="h1t">Pionowa delta</span> nad terenem <span id="locTxt">JO90HH</span></h1>
+    <h1><small id="eyebrow">Symulacja anteny na działce</small><span id="h1t">Pionowa delta</span><span id="h1rest"> nad terenem <span id="locTxt">JO90HH</span></span></h1>
     <div class="loc"><b id="coordTxt"></b><br>teren: NMT © GUGiK (geoportal.gov.pl), promień <span id="radTxt">3</span> km<br><span id="h0Txt"></span></div>
   </header>
 
@@ -128,6 +139,7 @@ tbody tr{cursor:pointer}
     <button type="button" role="tab" id="tab-a3s" data-tab="a3s" aria-selected="false">A3S<small>20 / 15 / 10 m</small></button>
     <button type="button" role="tab" id="tab-hex" data-tab="hex" aria-selected="false">Hexbeam<small>20–6 m, SP7IDX</small></button>
     <button type="button" role="tab" id="tab-quad" data-tab="quad" aria-selected="false">Quad<small>Cubex SkyMaster III</small></button>
+    <button type="button" role="tab" id="tab-masts" data-tab="masts" aria-selected="false" hidden>Maszty<small>co na którym maszcie</small></button>
   </nav>
   <div class="layout">
     <aside class="controls" aria-label="Parametry anteny">
@@ -413,6 +425,18 @@ tbody tr{cursor:pointer}
         <p class="muted">Czego nie ma w modelu: drzew, budynków, masztu i kabli zasilających, strat w materiale elementów i w układzie dopasowania. Izolacja drutu jest uwzględniona współczynnikiem skrócenia (NEC-2 nie modeluje izolacji bezpośrednio). Tryb „szybki model” to wcześniejszy model przybliżony, bez NEC. Silnik: nec2c, licencja GPL-3.0, źródło github.com/KJ7LNW/nec2c, skompilowany do WebAssembly.</p>
       </section>
     </div>
+  </div>
+  <div class="mview" id="mastView" hidden>
+    <div class="mcards">
+      <p class="hint" id="mastRules"></p>
+      <div id="mastCards" class="mcards"></div>
+      <p class="hint" id="mastFree"></p>
+    </div>
+    <figure>
+      <figcaption><h2>Rzut działki</h2><span class="d">Maszty z zawieszonymi antenami. Strzałki pokazują kierunek wiązki, linie przerywane ramiona dipola. Kliknij maszt, aby wybrać go po lewej.</span></figcaption>
+      <canvas id="mastPlan" width="900" height="640" aria-label="Rzut działki z masztami i antenami"></canvas>
+      <div class="legend" id="mastLeg"></div>
+    </figure>
   </div>
 </div>
 
@@ -1103,7 +1127,7 @@ if(P.dipole.wireAz!=null){P.dipole.arm1=(P.dipole.wireAz+180)%360;delete P.dipol
 const WIRES={UL:{A:0.3,D:1.5,er:2.3,n:'DX-Wire UL'},FL:{A:1.0,D:2.1,er:2.3,n:'DX-Wire FL'},FS:{A:2.0,D:2.8,er:2.3,n:'DX-Wire FS'},
   HDL:{A:1.97,D:3.0,er:2.3,n:'DX-Wire HDL'},PREMIUM:{A:1.17,D:2.0,er:2.1,n:'DX-Wire PREMIUM'},BARE:{n:'goły drut'}};
 state.bld=true; state.metal=true; state.planR=SITECFG.planR||500; state.coax={type:'rg58',len:20};
-state.wire='UL'; state.vfCustom=0.975; state.fitMsg=''; state.engine='nec'; state.nb={type:'',dist:20,brg:130,term:'50'}; state.nbAuto=true;
+state.wire='UL'; state.vfCustom=0.975; state.fitMsg=''; state.mastMsg=''; state.view='ant'; state.mastSelId=null; state.engine='nec'; state.nb={type:'',dist:20,brg:130,term:'50'}; state.nbAuto=true;
 function wireRadius(){const w=WIRES[state.wire];return (w&&w.A?Math.sqrt(w.A/Math.PI):Math.sqrt(1/Math.PI))*1e-3;}
 // insulation shortening: VF = 1/sqrt(1 + (1-1/εr)·ln(b/a) / ln(Lhalf/a))
 function wireVF(f){const w=WIRES[state.wire]; if(state.wire==='CUSTOM')return state.vfCustom; if(!w||!w.A)return 1;
@@ -1114,7 +1138,7 @@ const bandName=f=>f<2?'160 m':f<4.1?'80 m':f<5.5?'60 m':f<7.4?'40 m':f<10.2?'30 
 const norm=v=>((Math.round(v)%360)+360)%360;
 function nbParse(type){const [tab,des]=String(type||'').split(':');return {tab,des};}
 function nbSame(type,t){const n=nbParse(type);return n.tab===t&&(t!=='y15'||(n.des||P.y15.design)===P.y15.design);}
-function nbParams(type){const n=nbParse(type);return n.des?{...P[n.tab],design:n.des}:P[n.tab];}
+function nbParams(type){return keyParams(String(type));}
 function nbName(type){const n=nbParse(type);return n.tab==='y15'?'Yagi 15 m '+(n.des||P.y15.design).replace('el',' el.'):TABNAME[n.tab];}
 function antKey(tab,p){return tab==='y15'?'y15:'+p.design:tab;}
 const ANTNAME={'y15:5el':'Yagi 5 el. 15 m','y15:4el':'Yagi 4 el. 15 m',a3s:'A3S',y10:'Yagi 10 m',hex:'Hexbeam',quad:'Quad Cubex',delta:'Delta',dipole:'Dipol'};
@@ -1145,6 +1169,24 @@ function fitDipole(keepBeam){const p=P.dipole,g=RT.geo,Pg=SITECFG.parcel;if(!Pg|
     else for(let a1=0;a1<360;a1++)if(ok(a1)&&ok(a1+s)){const b=a1+Math.floor(s/2),db=Math.min(dd(b,cur),dd(b+180,cur));if(!best||db<best.db)best={a1,s,db};}}
   if(!best)return {err:`Ramię ma w rzucie ${reach.toFixed(1)} m, a działka od tego punktu ${keepBeam?'w tym kierunku ':''}nie ma tyle miejsca nawet przy kącie 30°.`+(keepBeam?' Spróbuj „najlepsze ułożenie” albo innego punktu zawieszenia.':' Wybierz inny punkt zawieszenia, odwrócone V albo wyższe pasmo.')};
   p.arm1=best.a1;p.spread=best.s;return {ok:true,s:best.s,beam:beamOf('dipole')};}
+// ---- mast configuration: one directional antenna or a delta per mast; the dipole may hang on a mast together with a Yagi, A3S, hexbeam or quad (not with a delta)
+const MAIN_KEYS=['delta','y15:5el','y15:4el','y10','a3s','hex','quad'].filter(k=>SITECFG.tabs.includes(k.split(':')[0]));
+const NO_DIPOLE=new Set(['delta']);
+function mastOcc(mid){const keys=Object.keys(state.mastAssign).filter(k=>state.mastAssign[k]===mid&&SITECFG.tabs.includes(k.split(':')[0]));return {main:keys.find(k=>k!=='dipole')||null,dipole:keys.includes('dipole')};}
+function assignMast(key,mid){ // returns a note about what else moved, or an error {err}
+  if(!mid){delete state.mastAssign[key];return '';}
+  const o=mastOcc(mid);
+  if(key==='dipole'){if(o.main&&NO_DIPOLE.has(o.main))return {err:`Na ${mid} wisi delta, dipola nie da się tam dodać.`};state.mastAssign.dipole=mid;return '';}
+  let note='';
+  if(o.main&&o.main!==key){delete state.mastAssign[o.main];note+=`${ANTNAME[o.main]} zdjęta z ${mid} (bez masztu). `;}
+  if(NO_DIPOLE.has(key)&&o.dipole){delete state.mastAssign.dipole;note+=`Dipol zdjęty z ${mid}, bo nie wisi razem z deltą. `;}
+  state.mastAssign[key]=mid;return note;}
+// y15: two designs (4 el. and 5 el.) can stand on different masts, each with its own height and azimuth
+P.y15.per={'5el':{height:P.y15.height,beamAz:P.y15.beamAz},'4el':{height:P.y15.height,beamAz:P.y15.beamAz}};
+function keyParams(key){const [tab,des]=key.split(':');if(tab==='y15'&&des&&des!==P.y15.design)return {...P.y15,design:des,...P.y15.per[des]};return des?{...P[tab],design:des}:P[tab];}
+function setKeyParam(key,field,v){const [tab,des]=key.split(':');if(tab==='y15'&&des&&des!==P.y15.design)P.y15.per[des][field]=v;else P[tab][field]=v;}
+function beamOfKey(key){const tab=key.split(':')[0];return tab==='delta'||tab==='dipole'?beamOf(tab):keyParams(key).beamAz;}
+function setBeamOfKey(key,b){const tab=key.split(':')[0];if(tab==='delta'||tab==='dipole')setBeamOf(tab,b);else setKeyParam(key,'beamAz',norm(b));}
 function mastLabel(m){const a=Object.keys(state.mastAssign).filter(k=>state.mastAssign[k]===m.id&&SITECFG.tabs.includes(k.split(':')[0])).map(k=>ANTNAME[k]);return m.id+(a.length?': '+a.join(', '):'');}
 function metalExtra(t,p){
   const M=SITECFG.metal, m=mastFor(t,p)||(t==='dipole'?{id:'C',pos:antPos(t,p)}:null); if(!state.metal||!M||!m)return null;
@@ -1160,7 +1202,7 @@ function nbList(t){const p=P[t];
     for(const k of Object.keys(state.mastAssign)){const tab=k.split(':')[0];if(k===me||!SITECFG.tabs.includes(tab)||(tab===t&&t!=='y15'))continue;
       const m=SITECFG.masts.find(x=>x.id===state.mastAssign[k]);if(!m)continue;
       const dx=m.pos[0]-o[0],dy=m.pos[1]-o[1],dist=Math.hypot(dx,dy),brg=dist<0.05?0:(Math.atan2(dx,dy)*180/Math.PI+360)%360;
-      out.push({key:k,type:tab,p:nbParams(k),beam:beamOf(tab),dist:Math.round(dist*10)/10,brg:Math.round(brg),term:state.nb.term,name:ANTNAME[k],mast:m.id});}
+      out.push({key:k,type:tab,p:nbParams(k),beam:beamOfKey(k),dist:Math.round(dist*10)/10,brg:Math.round(brg),term:state.nb.term,name:ANTNAME[k],mast:m.id});}
     return out;}
   if(state.nb.type&&!nbSame(state.nb.type,t)){const nt=nbParse(state.nb.type).tab;return [{...state.nb,key:state.nb.type,type:nt,p:nbParams(state.nb.type),beam:beamOf(nt),name:nbName(state.nb.type)}];}
   return [];}
@@ -1264,6 +1306,7 @@ function fmtS(v,d=1){if(Math.abs(v)<0.5*Math.pow(10,-d))return (0).toFixed(d);re
 function draw(){
   const g=RT.geo, t=state.tab, p=P[t];
   $('h1t').textContent=TABNAME[t]; $('eyebrow').textContent='Symulacja anteny na działce · '+(t==='delta'||t==='dipole'?(bandName(p.f)+', rezonans '+p.f.toFixed(3)+' MHz'):t==='y15'?'15 m, '+p.design.replace('el',' el.'):t==='a3s'?p.band+' m, 3 el. z trapami':t==='hex'?p.band+' m, G3TXQ / SP7IDX':t==='quad'?p.band+' m, quad 3 el.':'10 m, 5 el.');
+  if(state.view==='masts')mastHeader();
   if(document.activeElement!==$('selAz'))$('selAz').value=state.sel;
   $('elO').textContent=state.el+'°';
   const beam=beamOf(t), lam=299.8/p.f;
@@ -1274,8 +1317,10 @@ function draw(){
   {const hm=Math.max(...BLD.map(b=>b.H));$('bldHint').textContent=BLD.length+' budynków w promieniu 500 m, wysokości pomierzone (LoD1 2024, do '+hm.toFixed(0)+' m). Budynki są liczone jako przeszkody (dyfrakcja) dalej niż 1 λ od anteny, nie jako powierzchnia odbijająca.';}
   $('mastBox').hidden=!(SITECFG.masts&&SITECFG.masts.length);
   if(SITECFG.masts){const sel=$('mastSel'),cur=(mastFor(t,p)||{}).id||'';
-    sel.innerHTML='<option value="">środek działki (bez masztu)</option>'+SITECFG.masts.map(m=>`<option value="${m.id}">${m.id} (${mastLabel(m).split(': ')[1]||'wolny'})</option>`).join('');sel.value=cur;
-    $('mastHint').textContent=(ANTNAME[antKey(t,p)]||TABNAME[t])+(cur?' stoi na maszcie '+cur+'. Od masztu liczone są odległości do drugiej anteny i do metalowych obiektów.':' nie ma przypisanego masztu, więc liczę ją ze środka działki.');}
+    const me=antKey(t,p);
+    sel.innerHTML='<option value="">środek działki (bez masztu)</option>'+SITECFG.masts.map(m=>{const o=mastOcc(m.id);const blocked=me==='dipole'?(o.main&&NO_DIPOLE.has(o.main)):(o.main&&o.main!==me);
+      return `<option value="${m.id}"${blocked?' disabled':''}>${m.id} (${mastLabel(m).split(': ')[1]||'wolny'})${blocked?' – zajęty':''}</option>`;}).join('');sel.value=cur;
+    $('mastHint').textContent=(state.mastMsg?state.mastMsg+' ':'')+(ANTNAME[me]||TABNAME[t])+(cur?' stoi na maszcie '+cur+'. Od masztu liczone są odległości do pozostałych anten i do metalowych obiektów.':' nie ma przypisanego masztu, więc liczę ją ze środka działki.')+' Zajęte maszty zwolnisz w zakładce „Maszty”.';}
   $('metalBox').hidden=!SITECFG.metal;
   if(SITECFG.metal){const m=mastFor(t,p);$('metalHint').textContent=!m?'Ta antena nie ma przypisanego masztu, więc metalowe obiekty są pomijane. Wybierz maszt powyżej.':state.metal?(NECR&&NECR.metalSkipped?'Antena przechodzi zbyt blisko domku lub garażu (poniżej 0,3 m), więc metalowe obiekty są pominięte. Zmień maszt, wysokość albo kierunek.':'Domek (ok. 3 m) i garaż blaszany (2,15 m) jako metalowe siatki w NEC, odległość od '+m.id+' wg planu.')+' Altana jest drewniana, więc jej nie liczę.':'Wyłączone.';}
   $('coaxLenO').textContent=state.coax.len+' m';
@@ -1578,7 +1623,8 @@ let tmr=null;const deb=()=>{clearTimeout(tmr);tmr=setTimeout(recompute,state.eng
 function segInit(id,tab,key){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...$(id).children].forEach(x=>x.setAttribute('aria-pressed',x===b));P[tab][key]=key==='f'?parseFloat(b.dataset.v):b.dataset.v;recompute();});}
 segInit('band','delta','f');
 $('dBalun').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.delta.balun=+b.dataset.v;recompute();});
-$('pFeedSys').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.dipole.feedSys=b.dataset.v;recompute();});segInit('feed','delta','feed');segInit('pBand','dipole','f');segInit('pShape','dipole','shape');segInit('yDesign','y15','design');
+$('pFeedSys').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.dipole.feedSys=b.dataset.v;recompute();});segInit('feed','delta','feed');segInit('pBand','dipole','f');segInit('pShape','dipole','shape');$('yDesign').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const nd=b.dataset.v,od=P.y15.design;if(nd===od)return;
+  P.y15.per[od]={height:P.y15.height,beamAz:P.y15.beamAz};Object.assign(P.y15,{design:nd},P.y15.per[nd]);[...$('yDesign').children].forEach(x=>x.setAttribute('aria-pressed',x===b));state.sel=beamOf('y15');recompute();});
 const bindRange=(id,tab,key)=>$(id).addEventListener('input',e=>{P[tab][key]=parseFloat(e.target.value);deb();});
 bindRange('apex','delta','apex');bindRange('bottom','delta','bottom');bindRange('orient','delta','orient');
 bindRange('pHeight','dipole','height');
@@ -1609,7 +1655,76 @@ for(const [pre,tab] of [['d','delta'],['p','dipole'],['y','y15'],['t','y10'],['a
   $(pre+'Minus').addEventListener('click',()=>{setBeamOf(tab,beamOf(tab)-1);$(pre+'Az').value=beamOf(tab);deb();});
   $(pre+'Plus').addEventListener('click',()=>{setBeamOf(tab,beamOf(tab)+1);$(pre+'Az').value=beamOf(tab);deb();});
 }
-function setTab(t){state.tab=t;
+// ---- mast configuration view
+function showView(v){state.view=v;$('mastView').hidden=v!=='masts';document.querySelector('.layout').hidden=v==='masts';$('h1rest').hidden=v==='masts';
+  if(v==='masts'){document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab==='masts'));mastHeader();renderMasts();try{history.replaceState(null,'','#maszty');}catch(e){}}}
+function mastHeader(){$('h1t').textContent='Maszty na działce '+(SITECFG.callsign||'');$('eyebrow').textContent='Konfiguracja anten · '+SITECFG.loc;}
+function wiresOnMast(key){const tab=key.split(':')[0];let p=keyParams(key);if(tab==='dipole')p={...p,feedSys:'balun11'};
+  const g=necGeom(tab,p,1,wireRadius()),b=beamOfKey(key)*RAD,c=Math.cos(b),sn=Math.sin(b),R=v=>[v[0]*c+v[1]*sn,-v[0]*sn+v[1]*c,v[2]];
+  return g.wires.map(w=>({a:R(w.a),b:R(w.b)}));}
+function clearance(k1,k2){try{return minWireDist(wiresOnMast(k1),wiresOnMast(k2));}catch(e){return null;}}
+function renderMasts(){const ms=SITECFG.masts||[];
+  $('mastRules').textContent='Na jednym maszcie stoi jedna antena kierunkowa (Yagi, A3S, hexbeam, quad) albo delta. Dipol może wisieć na tym samym maszcie co Yagi, A3S, hexbeam albo quad, pod nimi, ale nie razem z deltą. Wysokości i azymuty są te same co w zakładkach anten.';
+  $('mastCards').innerHTML=(state.mastMsg?`<p class="warn" style="color:var(--warn);margin:0">${state.mastMsg}</p>`:'')+ms.map(m=>{const o=mastOcc(m.id);
+    const opts=['<option value="">— brak —</option>'].concat(MAIN_KEYS.map(k=>{const at=state.mastAssign[k];return `<option value="${k}"${o.main===k?' selected':''}>${ANTNAME[k]}${at&&at!==m.id?' (teraz na '+at+')':''}</option>`;})).join('');
+    const dist=ms.filter(x=>x!==m).map(x=>x.id+' '+Math.hypot(x.pos[0]-m.pos[0],x.pos[1]-m.pos[1]).toFixed(0)+' m').join(' · ');
+    let rows='';
+    if(o.main){const kp=keyParams(o.main),isD=o.main==='delta';
+      rows+=`<div class="mrow"><label for="mh-${m.id}">${isD?'wierzchołek delty':'wysokość anteny'}</label><input type="number" id="mh-${m.id}" data-k="${o.main}" data-f="${isD?'apex':'height'}" min="2" max="30" step="0.5" value="${(isD?kp.apex:kp.height).toFixed(1)}"><span>m</span>
+        <label for="ma-${m.id}">kierunek wiązki</label><input type="number" id="ma-${m.id}" data-k="${o.main}" data-f="az" min="0" max="359" step="1" value="${beamOfKey(o.main)}"><span>°</span></div>`;}
+    const dOk=!(o.main&&NO_DIPOLE.has(o.main)), dAt=state.mastAssign.dipole;
+    rows+=`<div class="chk"><input type="checkbox" id="md-${m.id}" data-m="${m.id}"${o.dipole?' checked':''}${dOk?'':' disabled'}><label for="md-${m.id}">dipol na tym maszcie${dAt&&dAt!==m.id?' (teraz na '+dAt+')':''}${dOk?'':' (nie razem z deltą)'}</label></div>`;
+    if(o.dipole)rows+=`<div class="mrow"><label for="mdh-${m.id}">wysokość środka dipola</label><input type="number" id="mdh-${m.id}" data-k="dipole" data-f="height" min="2" max="30" step="0.5" value="${P.dipole.height.toFixed(1)}"><span>m</span></div>`;
+    const cl=o.main&&o.dipole?clearance(o.main,'dipole'):null;
+    if(cl!=null)rows+=`<p class="${cl<0.5?'warn':'hint'}">Najmniejszy odstęp drutów dipola od anteny ${ANTNAME[o.main]}: ${cl.toFixed(2)} m.${cl<0.5?' To za blisko: NEC pominie tę parę. Obniż dipol albo podnieś antenę.':''}</p>`;
+    return `<div class="mcard${state.mastSelId===m.id?' sel':''}" data-m="${m.id}"><h3>${m.id}<small>${dist}</small></h3><select data-m="${m.id}" aria-label="Antena na maszcie ${m.id}">${opts}</select>${rows}</div>`;}).join('');
+  const free=['dipole',...MAIN_KEYS].filter(k=>!state.mastAssign[k]);
+  $('mastFree').textContent=free.length?'Bez masztu (liczone ze środka działki): '+free.map(k=>ANTNAME[k]).join(', ')+'.':'Wszystkie anteny są na masztach.';
+  drawMastPlan();}
+$('mastCards').addEventListener('change',e=>{const el=e.target,card=el.closest('.mcard');if(!card)return;const mid=card.dataset.m;state.mastMsg='';
+  if(el.tagName==='SELECT'){const o=mastOcc(mid),k=el.value;if(!k){if(o.main)delete state.mastAssign[o.main];}else{const r=assignMast(k,mid);state.mastMsg=r&&r.err?r.err:(r||'');}}
+  else if(el.type==='checkbox'){if(el.checked){const r=assignMast('dipole',mid);if(r&&r.err)state.mastMsg=r.err;}else if(state.mastAssign.dipole===mid)delete state.mastAssign.dipole;}
+  else if(el.type==='number'){const v=parseFloat(String(el.value).replace(',','.'));if(isNaN(v))return;const k=el.dataset.k,fl=el.dataset.f;
+    if(fl==='az')setBeamOfKey(k,v);else if(fl==='apex')P.delta.apex=Math.max(3,Math.min(30,v));else setKeyParam(k,'height',Math.max(2,Math.min(30,v)));}
+  state.mastSelId=mid;if(state.nb.type)nbFromMasts();renderMasts();});
+$('mastCards').addEventListener('click',e=>{const card=e.target.closest('.mcard');if(!card||state.mastSelId===card.dataset.m)return;state.mastSelId=card.dataset.m;document.querySelectorAll('.mcard').forEach(c=>c.classList.toggle('sel',c===card));drawMastPlan();});
+function drawMastPlan(){const c=$('mastPlan');if(!c||state.view!=='masts')return;const {x,w,h}=setupCanvas(c);x.clearRect(0,0,w,h);
+  const Pg=SITECFG.parcel||[],ms=SITECFG.masts||[];let ext=8;Pg.forEach(q=>ext=Math.max(ext,Math.abs(q[0]),Math.abs(q[1])));
+  const Rm=ext+3,sc=Math.min(w,h)/2/Rm,cx=w/2,cy=h/2,X=e=>cx+e*sc,Y=n=>cy-n*sc;
+  x.strokeStyle=css('--grid');x.lineWidth=1;for(let v=-Math.floor(Rm/5)*5;v<=Rm;v+=5){x.beginPath();x.moveTo(X(v),0);x.lineTo(X(v),h);x.stroke();x.beginPath();x.moveTo(0,Y(v));x.lineTo(w,Y(v));x.stroke();}
+  // plot structures
+  const cen=poly=>[poly.reduce((a,q)=>a+q[0],0)/poly.length,poly.reduce((a,q)=>a+q[1],0)/poly.length];
+  const leg=[];
+  for(const b of BLD.filter(b=>b.t==='plot')){const cc=cen(b.poly),met=(SITECFG.metal||[]).find(mm=>Math.hypot(...cen(mm.poly).map((v,i)=>v-cc[i]))<1.5);
+    const nm=met?met.name.split(' (')[0]:'altana',tag=nm[0].toUpperCase();leg.push(`${tag} – ${nm}, ${met?'metal':'drewno'}, ${b.H.toFixed(2).replace(/0$/,'').replace('.',',')} m`);
+    x.fillStyle=met?'rgba(120,130,140,.45)':'rgba(150,120,80,.3)';x.beginPath();b.poly.forEach((q,i)=>i?x.lineTo(X(q[0]),Y(q[1])):x.moveTo(X(q[0]),Y(q[1])));x.closePath();x.fill();
+    x.fillStyle=css('--ink');x.font='600 12px '+css('--sans');x.textAlign='center';x.fillText(tag,X(cc[0]),Y(cc[1])+4);}
+  $('mastLeg').textContent=leg.join(' · ');
+  if(Pg.length){x.strokeStyle=css('--warn');x.lineWidth=2;x.beginPath();Pg.forEach((q,i)=>i?x.lineTo(X(q[0]),Y(q[1])):x.moveTo(X(q[0]),Y(q[1])));x.closePath();x.stroke();}
+  // dipole arms
+  {const dp=antPos('dipole',P.dipole),gd=buildDipole({...P.dipole,vf:wireVF(P.dipole.f)}),L=dipoleLayout(gd);x.setLineDash([6,4]);x.lineWidth=2.5;
+    for(const r of L.arms){const bad=Pg.length&&(!r.inside||r.ray<r.reach);x.strokeStyle=bad?css('--warn'):css('--ref');x.beginPath();x.moveTo(X(dp[0]),Y(dp[1]));x.lineTo(X(r.end[0]),Y(r.end[1]));x.stroke();}
+    x.setLineDash([]);x.fillStyle=css('--muted');x.font='11px '+css('--sans');x.textAlign='left';const e2=L.arms[1].end;x.fillText('dipol '+bandName(P.dipole.f),X(e2[0])+5,Y(e2[1])+4);}
+  // beams
+  const arrow=(p0,az,len,col)=>{const t=az*RAD,e=[p0[0]+len*Math.sin(t),p0[1]+len*Math.cos(t)];x.strokeStyle=col;x.fillStyle=col;x.lineWidth=2.5;x.beginPath();x.moveTo(X(p0[0]),Y(p0[1]));x.lineTo(X(e[0]),Y(e[1]));x.stroke();
+    const a1=t+Math.PI*0.85,a2=t-Math.PI*0.85,hs=9;x.beginPath();x.moveTo(X(e[0]),Y(e[1]));x.lineTo(X(e[0])+hs*Math.sin(a1),Y(e[1])-hs*Math.cos(a1));x.lineTo(X(e[0])+hs*Math.sin(a2),Y(e[1])-hs*Math.cos(a2));x.closePath();x.fill();};
+  for(const o of ms.map(m=>({pos:m.pos,m}))){const keys=Object.keys(state.mastAssign).filter(k=>state.mastAssign[k]===o.m.id);
+    for(const k of keys){if(k==='dipole')continue;if(k==='delta'){const b=beamOfKey(k)*RAD,dx=4*Math.cos(b),dy=-4*Math.sin(b);x.strokeStyle=css('--accent');x.lineWidth=3;x.beginPath();x.moveTo(X(o.pos[0]-dx),Y(o.pos[1]-dy));x.lineTo(X(o.pos[0]+dx),Y(o.pos[1]+dy));x.stroke();arrow(o.pos,beamOfKey(k),3,css('--accent'));arrow(o.pos,beamOfKey(k)+180,3,css('--accent'));}
+      else if(o.m)arrow(o.pos,beamOfKey(k),6,css('--accent'));}}
+  c._m=[];
+  for(const m of ms){const o=mastOcc(m.id),sel=state.mastSelId===m.id,px=X(m.pos[0]),py=Y(m.pos[1]);c._m.push({id:m.id,px,py});
+    x.fillStyle=o.main||o.dipole?css('--accent'):css('--bg');x.strokeStyle=css('--accent');x.lineWidth=sel?3:2;x.beginPath();x.arc(px,py,sel?9:7,0,7);x.fill();x.stroke();
+    const lines=[m.id+(o.main?'':o.dipole?'':' (wolny)'),o.main?ANTNAME[o.main]+' '+(o.main==='delta'?keyParams(o.main).apex:keyParams(o.main).height).toFixed(1)+' m':null,o.dipole?'dipol '+P.dipole.height.toFixed(1)+' m':null].filter(Boolean);
+    x.textAlign='left';lines.forEach((t,i)=>{x.font=(i?'':'600 ')+'12px '+css('--sans');x.fillStyle=i?css('--muted'):css('--ink');x.fillText(t,px+12,py-4+i*14);});}
+  x.fillStyle=css('--ink');x.font='600 12px '+css('--sans');x.textAlign='center';x.fillText('N ↑',w-24,20);
+  x.strokeStyle=css('--ink');x.lineWidth=2;x.beginPath();x.moveTo(16,h-16);x.lineTo(16+5*sc,h-16);x.stroke();x.font='11px '+css('--sans');x.textAlign='left';x.fillText('5 m',18,h-22);}
+$('mastPlan').addEventListener('click',e=>{const c=$('mastPlan'),r=c.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let best=null;
+  for(const q of (c._m||[])){const d=Math.hypot(q.px-mx,q.py-my);if(d<24&&(!best||d<best.d))best={id:q.id,d};}
+  if(!best)return;state.mastSelId=best.id;renderMasts();const card=document.querySelector(`.mcard[data-m="${best.id}"]`);if(card)card.scrollIntoView({block:'nearest',behavior:'smooth'});});
+function syncSliders(){for(const [id,tab,key] of [['apex','delta','apex'],['bottom','delta','bottom'],['orient','delta','orient'],['pHeight','dipole','height'],['yHeight','y15','height'],['yRange','y15','beamAz'],['tHeight','y10','height'],['tRange','y10','beamAz'],['aHeight','a3s','height'],['aRange','a3s','beamAz'],['hHeight','hex','height'],['hRange','hex','beamAz'],['qHeight','quad','height'],['qRange','quad','beamAz']]){const el=$(id);if(el&&P[tab]&&P[tab][key]!=null)el.value=P[tab][key];}
+  if($('yDesign'))[...$('yDesign').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===P.y15.design));}
+function setTab(t){if(t==='masts'){showView('masts');return;}
+  if(state.view!=='ant')showView('ant');state.mastMsg='';state.tab=t;syncSliders();
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
   document.querySelectorAll('.panel').forEach(p=>p.hidden=p.dataset.tab!==t);
   state.sel=beamOf(t);
@@ -1625,7 +1740,7 @@ $('nbDist').addEventListener('input',e=>{state.nb.dist=parseFloat(e.target.value
 $('nbBrg').addEventListener('change',e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){state.nb.brg=norm(v);e.target.value=state.nb.brg;recompute();}});
 for(const id of ['nbTerm','nbTerm2'])$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.nb.term=b.dataset.v;recompute();});
 $('nbAuto').addEventListener('change',e=>{state.nbAuto=e.target.checked;recompute();});
-$('mastSel').addEventListener('change',e=>{state.fitMsg='';const k=antKey(state.tab,P[state.tab]);if(e.target.value)state.mastAssign[k]=e.target.value;else delete state.mastAssign[k];if(state.nb.type)nbFromMasts();recompute();});
+$('mastSel').addEventListener('change',e=>{state.fitMsg='';const k=antKey(state.tab,P[state.tab]);const r=assignMast(k,e.target.value);state.mastMsg=r&&r.err?r.err:(r||'');if(state.nb.type)nbFromMasts();recompute();});
 $('metalChk').addEventListener('change',e=>{state.metal=e.target.checked;recompute();});
 $('coaxType').addEventListener('change',e=>{state.coax.type=e.target.value;recompute();});
 $('coaxLen').addEventListener('input',e=>{state.coax.len=parseInt(e.target.value);deb();});
@@ -1643,16 +1758,17 @@ $('sky').addEventListener('click',e=>{const c=$('sky'),r=c.getBoundingClientRect
 const pickRow=e=>{const tr=e.target.closest('tr');if(!tr)return;state.sel=+tr.dataset.az;draw();};
 $('plan').addEventListener('click',e=>{const c=$('plan'),r=c.getBoundingClientRect(),g=c._g;state.sel=Math.round((Math.atan2(e.clientX-r.left-g.cx,g.cy-(e.clientY-r.top))*180/Math.PI+360)%360)%360;draw();});
 $('dx').addEventListener('click',pickRow);$('dx').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pickRow(e);}});
-window.addEventListener('resize',()=>{clearTimeout(tmr);tmr=setTimeout(draw,120);});
+window.addEventListener('resize',()=>{clearTimeout(tmr);tmr=setTimeout(()=>{draw();drawMastPlan();},120);});
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);}catch(e){}
 new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-document.querySelectorAll('.tabs button').forEach(b=>{if(!SITECFG.tabs.includes(b.dataset.tab))b.remove();});
+document.querySelectorAll('.tabs button').forEach(b=>{if(b.dataset.tab==='masts'){if(HAS_MASTS)b.hidden=false;else b.remove();return;}if(!SITECFG.tabs.includes(b.dataset.tab))b.remove();});
 document.querySelectorAll('.panel[data-tab]').forEach(p=>{if(!SITECFG.tabs.includes(p.dataset.tab)&&['delta','dipole','y15','y10','a3s','hex','quad'].includes(p.dataset.tab))p.remove();});
 $('coordTxt').textContent=SITECFG.lat.toFixed(4)+'°N '+SITECFG.lon.toFixed(4)+'°E';$('h0Txt').textContent=(SITECFG.callsign?SITECFG.callsign+' · ':'')+'punkt '+SITECFG.h0.toFixed(1).replace('.',',')+' m n.p.m.';
 $('apexHint').textContent=SITECFG.apexHint;$('siteNote').textContent=SITECFG.note;
 {const h=(location.hash||'').slice(1);if(P[h]&&h!=='delta'&&SITECFG.tabs.includes(h)){state.tab=h;}
  necInit().then(()=>{if(P[h]&&h!=='delta'&&SITECFG.tabs.includes(h))setTab(h);else recompute();});
- if(P[h]&&h!=='delta'&&SITECFG.tabs.includes(h))setTab(h);else recompute();}
+ if(P[h]&&h!=='delta'&&SITECFG.tabs.includes(h))setTab(h);else recompute();
+ if(h==='maszty'&&HAS_MASTS)setTab('masts');}
 </script>
 
 </body>
