@@ -302,8 +302,13 @@ tbody tr{cursor:pointer}
           <label for="pCy">Środek → N</label><input type="number" id="pCy" min="-100" max="100" step="0.5"><span>m</span></div>
         <div class="num"><button type="button" id="pFitA" class="planbtn">dopasuj kąt ramion</button><button type="button" id="pFitB" class="planbtn">najlepsze ułożenie</button></div>
         <p class="hint" id="pFitHint"></p></div>
+      <div class="ctl" id="mmEnds" hidden><span class="lab">Wysokość końców przy masztach</span>
+        <div class="numg"><label for="mmE1" id="mmE1L">koniec 1</label><input type="number" id="mmE1" min="1" max="30" step="0.1" inputmode="decimal"><span>m</span>
+          <label for="mmE2" id="mmE2L">koniec 2</label><input type="number" id="mmE2" min="1" max="30" step="0.1" inputmode="decimal"><span>m</span></div>
+        <p class="hint" id="mmEndsHint"></p></div>
       <div class="ctl"><span class="lab">Najlepsze ułożenie na kierunki DX</span>
         <div class="num"><button type="button" class="planbtn dxgo" data-t="dipole">policz dla wszystkich kierunków</button></div>
+        <div class="num" id="dEndBox" hidden><label for="dEndH">Końce przy masztach na</label><input type="number" id="dEndH" min="1" max="30" step="0.5" placeholder="auto" inputmode="decimal"><span>m (puste: 0,5 m pod anteną na maszcie)</span></div>
         <p class="hint dxhint" data-t="dipole"></p>
         <div class="dxlist" data-t="dipole"></div></div>
       </div>
@@ -1285,7 +1290,7 @@ const state={tab:'delta',ground:'avg',sel:310,el:10};
 const P={
   delta:{f:7.1,apex:7,bottom:2.5,orient:40,feed:'corner',balun:4,cx:0,cy:0,mb:false,fDesign:3.6,match:'radio'},
   hdelta:{f:3.65,feedPos:'corner',match:'radio',balun:4,beamAz:0,corners:null},
-  dipole:{f:7.1,height:7,arm1:220,spread:180,cx:0,cy:0,shape:'flat',feedSys:'balun11'},
+  dipole:{f:7.1,height:7,arm1:220,spread:180,cx:0,cy:0,shape:'flat',feedSys:'balun11',endH:null},
   eatu:{QL:100},
   y15:{f:21.2,height:12,beamAz:310,design:'5el'},
   y10:{f:28.5,height:10,beamAz:310,design:'5el'},
@@ -1501,8 +1506,8 @@ const DXCODE=['W1','W6','KP4','PY','ZS','VK6','VK2','JA'];
 const DXSHORT=['USA wsch. (W1)','USA zach. (W6)','Karaiby','Ameryka Płd.','Afryka Płd.','VK6','VK2','Japonia'];
 const DXRES={};let dxRun=0;
 function dxKey(t){const p=P[t],c=[state.ground,state.coax.type,state.coax.len,p.f];
-  if(t==='dipole')c.push(p.height,p.shape,p.feedSys);else if(t==='delta')c.push(p.apex,p.mb,p.fDesign,p.match);else c.push(p.match,hdCorners().map(q=>[q.e,q.n,q.h].map(v=>(+v).toFixed(1)).join(",")).sort().join(';'));return JSON.stringify(c);}
-function dxStale(){for(const t of Object.keys(DXRES))if(DXRES[t]&&DXRES[t].key!==dxKey(t)){delete DXRES[t];renderDX(t);const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h){h.classList.remove('err');h.textContent='Zmieniło się pasmo, wysokość, grunt albo kabel. Policz kierunki jeszcze raz.';}}}
+  if(t==='dipole')c.push(p.height,p.shape,p.feedSys,p.endH);else if(t==='delta')c.push(p.apex,p.mb,p.fDesign,p.match);else c.push(p.match,hdCorners().map(q=>[q.e,q.n,q.h].map(v=>(+v).toFixed(1)).join(",")).sort().join(';'));return JSON.stringify(c);}
+function dxStale(){for(const t of Object.keys(DXRES))if(DXRES[t]&&DXRES[t].key!==dxKey(t)){delete DXRES[t];renderDX(t);const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h){h.classList.remove('err');h.textContent='Zmieniło się pasmo, wysokość (także końców), grunt, zasilanie albo kabel. Policz kierunki jeszcze raz.';}}}
 // Obstacles on the plot for the wires and the new support: buildings and sheds (wire ≥ 1 m above the roof and ≥ 1 m to the side) and tree crowns (wire ≥ 0.5 m above the canopy, lidar)
 let DXNEED=null;
 function dxNeed(){const Pg=SITECFG.parcel;if(!Pg)return ()=>0;const key=state.trees+'|'+state.bld;if(DXNEED&&DXNEED.key===key)return DXNEED.f;
@@ -1562,7 +1567,7 @@ async function optimizeDX(t){const my=++dxRun,p0=P[t],lam=299.8/p0.f,gr=GROUNDS[
     // the dipole centre and its ends hang 0.5 m below that antenna; a mast without an antenna takes the dipole height. Two variants per layout:
     // resonant (any excess wire hangs down vertically at the mast, to 1 m above ground) and cut to the masts (0.3 m rope) with an eATU at the feed point.
     const MMr=[];if(HAS_MASTS&&SITECFG.masts.length>=2){const ms=SITECFG.masts,azOf=(a,b)=>norm(Math.round(Math.atan2(b[0]-a[0],b[1]-a[1])/RAD)),dist=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1]),cfg=[];
-      const top=mid=>{const o=mastOcc(mid);return o.main?+keyParams(o.main).height:null;},tieH=mid=>{const t=top(mid);return t?Math.max(2,t-0.5):p0.height;};
+      const top=mid=>{const o=mastOcc(mid);return o.main?+keyParams(o.main).height:null;},tieH=mid=>{if(p0.endH!=null)return p0.endH;const t=top(mid);return t?Math.max(2,t-0.5):p0.height;};
       if(ms.length>=3)for(const c of ms){const [A,B]=ms.filter(m=>m!==c),zA=azOf(c.pos,A.pos),zB=azOf(c.pos,B.pos),d=norm(zB-zA),[e1,e2,a1,sp]=d<=180?[A,B,zA,d]:[B,A,zB,360-d],tc=top(c.id);
         cfg.push({kind:'v',c,e1,e2,a1,sp,pos:c.pos,D:[dist(c.pos,e1.pos),dist(c.pos,e2.pos)],E:[tieH(e1.id),tieH(e2.id)],hC:tc?Math.min(p0.height,Math.max(2,tc-0.5)):p0.height,label:`zasilanie na ${c.id}, końce do ${e1.id} i ${e2.id}`});}
       for(let x=0;x<ms.length;x++)for(let y=x+1;y<ms.length;y++){const A=ms[x],B=ms[y],mid=[(A.pos[0]+B.pos[0])/2,(A.pos[1]+B.pos[1])/2],Lh=dist(A.pos,B.pos)/2,E=[tieH(A.id),tieH(B.id)];
@@ -1624,7 +1629,7 @@ function dxLabel(t,r){if(!r)return 'nie mieści się w działce z żadnego miejs
   const C=P.hdelta.corners,nm=j=>{const c=C[(r.rot+j)%3];return c.src!=='pt'?c.src:'narożnik '+((r.rot+j)%3+1);};return r.fp==='corner'?`zasilanie w narożniku <b>${nm(0)}</b>`:`zasilanie na środku boku <b>${nm(0)}–${nm(1)}</b>`;}
 function renderDX(t){const el=document.querySelector(`.dxlist[data-t="${t}"]`),R=DXRES[t];if(!el)return;if(!R){el.innerHTML='';return;}const on=state.dxOn&&state.dxOn[t];
   const gg=(g)=>{const bi=g.reduce((b,x,i)=>x>g[b]?i:b,0);return `<span class="dxg">${g.map((x,i)=>`<span${i===bi?' class="top"':''}>${DXCODE[i]} ${fmtS(x)}</span>`).join('')}</span>`;};
-  const mm=R.mm&&R.mm.length?`<div class="dxdir"><div class="dxh">Dipol rozpięty między masztami</div><p class="hint" style="margin:0 2px">Maszt ma wysokość anteny na jego szczycie (zakładka Maszty); środek i końce dipola wiszą 0,5 m niżej. Maszt bez anteny: wysokość dipola. Drut ma długość rezonansową, a nadmiar zwisa pionowo przy maszcie (koniec co najmniej 2 m nad ziemią, odsunięty od masztu na lince). Jeśli i tak się nie mieści, strona bierze najdłuższy drut, jaki się mieści, z eATU.</p>`+R.mm.map((m,k)=>{
+  const mm=R.mm&&R.mm.length?`<div class="dxdir"><div class="dxh">Dipol rozpięty między masztami</div><p class="hint" style="margin:0 2px">${P.dipole.endH!=null?`Końce przy masztach na ${fmtS(P.dipole.endH)} m (ustawione niżej, pod przyciskiem).`:'Maszt ma wysokość anteny na jego szczycie (zakładka Maszty); końce dipola wiszą 0,5 m niżej. Maszt bez anteny: wysokość dipola.'} Środek na maszcie zasilania wisi 0,5 m pod anteną. Drut ma długość rezonansową, a nadmiar zwisa pionowo przy maszcie (koniec co najmniej 2 m nad ziemią, odsunięty od masztu na lince). Jeśli i tak się nie mieści, strona bierze najdłuższy drut, jaki się mieści, z eATU.</p>`+R.mm.map((m,k)=>{
       const head=`<div class="dxsub"><b>${m.label}</b>${m.sp<180?` (V ${m.sp}°)`:''}, ramiona na ${m.a1}° i ${m.a2}°; środek ${fmtS(m.hC)} m, końce ${m.E.map(e=>fmtS(e)).join(' / ')} m</div>`;
       if(m.why)return head+`<div class="dxno">${m.why}</div>`;
       return head+m.v.map((v,vk)=>{const nm=v.fix?'najdłuższy drut, jaki się mieści + eATU':'rezonansowy';if(v.why)return `<div class="dxno"><b>${nm}</b>: ${v.why}</div>`;
@@ -1634,7 +1639,7 @@ function renderDX(t){const el=document.querySelector(`.dxlist[data-t="${t}"]`),R
     `<button type="button" class="dxrow${on===i+':'+k?' on':''}" data-t="${t}" data-i="${i}" data-k="${k}"><span class="g">${fmtS(r.g)} dBi</span>${k===d.def&&d.opts.length>1?'<span class="best">polecany</span> ':''}${dxLabel(t,r)}<span class="ls"> · straty zasilania ${fmtS(r.loss)} dB${r.gain!=null?` · o ${fmtS(r.gain)} dB więcej niż najlepszy maszt`:''}</span></button>`).join(''):
     `<div class="dxno">${dxLabel(t,null)}</div>`+d.opts.filter(o=>o&&o.none).map(r=>`<div class="dxno"><b>${r.q.label}</b>: ${r.why}</div>`).join(''))+'</div>').join('');}
 function applyMM(t,k,vk,di){const m=DXRES[t]&&DXRES[t].mm&&DXRES[t].mm[k],v=m&&m.v&&m.v[vk];if(!v||v.why)return;const i=di!=null?di:v.g.reduce((b,g,j)=>g>v.g[b]?j:b,0);
-  state.dxOn=state.dxOn||{};let note='';
+  state.dxOn=state.dxOn||{};let note='';state.mmNote='';
   if(m.kind==='v'){const x=assignMast('dipole',m.c.id);note=x&&x.err?x.err:'';}else{assignMast('dipole',null);P.dipole.cx=m.pos[0];P.dipole.cy=m.pos[1];}
   Object.assign(P.dipole,{spread:m.sp,arm1:m.a1,height:m.hC,shape:'flat',feedSys:v.feedSys,mm:{D:m.D,E:m.E,fix:v.fix,rope:0.3,hmin:2,L:v.L||undefined,tie:[m.e1.pos,m.e2.pos],names:[m.e1.id,m.e2.id]}});state.fitMsg='';
   if(DXRES[t])DXRES[t].key=dxKey(t);   // height, shape and feed follow the masts here; the list stays valid
@@ -1806,7 +1811,9 @@ function draw(){
       fitTxt+=!L.centerIn?' Środek dipola jest poza działką.':bad.length?' '+bad.map((r,k)=>`${k?'ramię':'Ramię'} ${r.i} wychodzi poza działkę o ${(r.reach-r.ray).toFixed(1)} m`).join(', ')+'.':' Oba ramiona mieszczą się w działce (zapas '+Math.min(...L.arms.map(r=>r.ray-r.reach)).toFixed(1)+' m wzdłuż ramion).';}
     if(L.mm&&p.mm)fitTxt=`Rozpięty między masztami${p.mm.fix?', najdłuższy drut, jaki się mieści, zasilanie przez eATU':', rezonansowy'}: `+L.arms.map((r,i)=>`ramię ${r.i} do ${p.mm.names[i]}: ${L.mm.Lph[i].toFixed(1)} m drutu${L.mm.drop[i]>0.05?`, w tym ${L.mm.drop[i].toFixed(1)} m opuszczone pionowo przy maszcie`:''}, linka ${Math.max(0,p.mm.D[i]-r.reach).toFixed(1)} m, koniec na ${p.mm.E[i].toFixed(1)} m`).join('; ')+`. Środek na ${p.height.toFixed(1)} m.`;
     $('pFitHint').textContent=(state.fitMsg?state.fitMsg+' ':'')+fitTxt;$('pFitHint').classList.toggle('err',!!(Pg&&(!L.centerIn||L.arms.some(r=>!r.inside||r.ray<r.reach))));
-    $('pFitA').hidden=$('pFitB').hidden=!Pg;
+    $('pFitA').hidden=$('pFitB').hidden=!Pg;$('dEndBox').hidden=!HAS_MASTS;if(document.activeElement!==$('dEndH'))$('dEndH').value=p.endH==null?'':p.endH;
+    $('mmEnds').hidden=!p.mm;if(p.mm){for(const i of [0,1]){$('mmE'+(i+1)+'L').textContent='przy '+p.mm.names[i];if(document.activeElement!==$('mmE'+(i+1)))$('mmE'+(i+1)).value=p.mm.E[i].toFixed(1);}
+      $('mmEndsHint').textContent=(state.mmNote?state.mmNote+' ':'')+`Końce niżej niż środek (${p.height.toFixed(1)} m) to odwrócone V między masztami. Nadmiar drutu zwisa pionowo przy maszcie, a koniec zostaje co najmniej 2 m nad ziemią, więc najwięcej drutu mieści się przy wysoko zawieszonych końcach; niżej zawieszone końce skracają zwis, ale zmieniają charakterystykę i impedancję. Zmiana od razu przelicza rezonans i SWR.`;}
     geoHtml=`<span>rezonans</span><b>${p.f.toFixed(3)} MHz</b><span>${g.nec?'długość el. (NEC, X=0)':'goły drut (143/f)'}</span><b>${g.Lbare.toFixed(2)} m</b><span>skrócenie izolacji</span><b>× ${g.vf.toFixed(3)}</b><span>długość do cięcia</span><b>${g.Lphys.toFixed(2)} m</b><span>ramię ×2</span><b>${(g.Lphys/2).toFixed(2)} m</b><span>wysokość środka</span><b>${p.height.toFixed(1)} m</b><span>wysokość w λ</span><b>${(p.height/lam).toFixed(2)} λ</b>`+
       (p.shape==='invv'?`<span>końce na</span><b>${g.endH.toFixed(1)} m</b><span>kąt odwróconego V (w pionie)</span><b>${(180-2*g.droop).toFixed(0)}°</b>`:'')+
       `<span>kąt ramion z góry</span><b>${p.spread}°${p.spread===180?' (prosty)':''}</b>`+
@@ -2100,6 +2107,18 @@ $('pFeedSys').addEventListener('click',e=>{const b=e.target.closest('button');if
 const bindRange=(id,tab,key)=>$(id).addEventListener('input',e=>{P[tab][key]=parseFloat(e.target.value);deb();});
 bindRange('apex','delta','apex');bindRange('bottom','delta','bottom');bindRange('orient','delta','orient');
 bindRange('pHeight','dipole','height');
+// end heights of a dipole strung between masts: re-check resonance (excess wire hangs down at the mast), otherwise the longest wire that fits + eATU
+async function mmRefit(){const p=P.dipole,m=p.mm;if(!m||!NEC.ok)return;const vf=wireVF(p.f),gr=GROUNDS[state.ground],hm=m.hmin||2;
+  const base={...p,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r,shape:'flat'};
+  const r0=await necAnalyze('dipole',{...base,feedSys:p.feedSys==='atu'?'balun11':p.feedSys,mm:{D:m.D,E:m.E,vf,fix:false,rope:0.3,hmin:hm}},wireRadius(),gr);
+  if(r0.info.mm.short<=0.05){if(m.fix)p.feedSys='balun11';m.fix=false;delete m.L;state.mmNote='Przy tych wysokościach drut rezonansowy się mieści.';}
+  else{const kV=s=>1+0.095*Math.pow(1-Math.sin(s/2*RAD),1.5),Lres=71.5/p.f*0.975*vf*kV(p.spread),mx=[0,1].map(i=>Math.hypot(m.D[i],p.height-m.E[i])+Math.max(0,m.E[i]-hm)-0.05);
+    m.fix=true;m.L=mx.map(x=>Math.round(Math.min(Lres,x)*10)/10);p.feedSys='atu';state.mmNote=`Przy tych wysokościach drut rezonansowy (ok. ${fmtS(Lres)} m na ramię) się nie mieści, brakuje ${mx.map(x=>fmtS(Math.max(0,Lres-x))).join(' i ')} m, więc: najdłuższy drut, jaki się mieści, z eATU.`;}
+  if(DXRES.dipole)DXRES.dipole.key=dxKey('dipole');}
+for(const i of [0,1])$('mmE'+(i+1)).addEventListener('change',async e=>{const v=parseFloat(String(e.target.value).replace(',','.'));if(isNaN(v)||!P.dipole.mm)return;
+  P.dipole.mm.E[i]=Math.max(2,Math.min(30,v));await mmRefit();recompute();});
+$('dEndH').addEventListener('change',async e=>{const s=String(e.target.value).trim().replace(',','.'),v=parseFloat(s);P.dipole.endH=s===''||isNaN(v)?null:Math.max(2,Math.min(30,v));
+  if(P.dipole.mm&&P.dipole.endH!=null){P.dipole.mm.E=[P.dipole.endH,P.dipole.endH];await mmRefit();}recompute();});
 $('pWire').addEventListener('input',e=>{P.dipole.mm=null;setBeamOf('dipole',+e.target.value);state.fitMsg='';deb();});
 $('pSpread').addEventListener('input',e=>{P.dipole.mm=null;const b=beamOf('dipole');P.dipole.spread=+e.target.value;setBeamOf('dipole',b);state.fitMsg='';deb();});
 for(const id of ['pA1','pA2'])$(id).addEventListener('change',()=>{const a=parseFloat($('pA1').value),b=parseFloat($('pA2').value);if(isNaN(a)||isNaN(b))return;
