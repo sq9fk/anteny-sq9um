@@ -119,6 +119,14 @@ tbody tr{cursor:pointer}
 .hdc{display:grid;grid-template-columns:14px 64px repeat(3,minmax(0,1fr));gap:4px;align-items:center;font-size:12.5px;color:var(--muted)}
 .hdc select,.hdc input{width:100%;box-sizing:border-box;font:inherit;font-family:var(--mono);font-size:13px;padding:4px 3px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
 .hdc input:disabled{opacity:.6}
+.dxlist{display:flex;flex-direction:column;gap:6px}
+.dxrow{font:inherit;font-size:13px;text-align:left;line-height:1.35;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);cursor:pointer}
+.dxrow:hover{border-color:var(--accent)}
+.dxrow b{font-weight:600}
+.dxrow .g{float:right;font-family:var(--mono)}
+.dxrow .warn{color:var(--warn)}
+.dxrow .ls{color:var(--muted)}
+.dxrow.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .planbtn{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--accent);border-radius:5px;background:var(--accent-soft);color:var(--ink);cursor:pointer;align-self:flex-start}
 .elctl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
 .elctl input{flex:1}
@@ -193,6 +201,10 @@ tbody tr{cursor:pointer}
         <div class="chk"><input type="checkbox" id="dOptSwr" checked><label for="dOptSwr">tylko układy z SWR ≤ 2 (balun 1:1 albo 4:1)</label></div>
         <div class="num"><button type="button" id="dOptGo" class="planbtn">znajdź najlepsze ułożenie</button><button type="button" id="dOptApply" class="planbtn" hidden>ustaw ten układ</button></div>
         <p class="hint" id="dOptHint"></p></div>
+      <div class="ctl"><span class="lab">Najlepsze ułożenie na kierunki DX</span>
+        <div class="num"><button type="button" class="planbtn dxgo" data-t="delta">policz dla wszystkich kierunków</button></div>
+        <p class="hint dxhint" data-t="delta"></p>
+        <div class="dxlist" data-t="delta"></div></div>
       </div>
 
       <div class="panel" data-tab="hdelta" hidden>
@@ -207,6 +219,10 @@ tbody tr{cursor:pointer}
       <div class="ctl"><span class="lab">Dopasowanie</span>
         <div class="seg" id="hdMatch"><button type="button" data-v="radio" aria-pressed="true">4:1 + tuner przy radiu</button><button type="button" data-v="eatu">4:1 + eATU przy antenie</button></div>
         <p class="hint" id="hdHint"></p></div>
+      <div class="ctl"><span class="lab">Najlepsze ułożenie na kierunki DX</span>
+        <div class="num"><button type="button" class="planbtn dxgo" data-t="hdelta">policz dla wszystkich kierunków</button></div>
+        <p class="hint dxhint" data-t="hdelta"></p>
+        <div class="dxlist" data-t="hdelta"></div></div>
       </div>
 
       <div class="panel" data-tab="dipole" hidden>
@@ -248,6 +264,10 @@ tbody tr{cursor:pointer}
           <label for="pCy">Środek → N</label><input type="number" id="pCy" min="-100" max="100" step="0.5"><span>m</span></div>
         <div class="num"><button type="button" id="pFitA" class="planbtn">dopasuj kąt ramion</button><button type="button" id="pFitB" class="planbtn">najlepsze ułożenie</button></div>
         <p class="hint" id="pFitHint"></p></div>
+      <div class="ctl"><span class="lab">Najlepsze ułożenie na kierunki DX</span>
+        <div class="num"><button type="button" class="planbtn dxgo" data-t="dipole">policz dla wszystkich kierunków</button></div>
+        <p class="hint dxhint" data-t="dipole"></p>
+        <div class="dxlist" data-t="dipole"></div></div>
       </div>
 
       <div class="panel" data-tab="y15" hidden>
@@ -1202,7 +1222,7 @@ function bearing(la1,lo1,la2,lo2){const r=Math.PI/180,y=Math.sin((lo2-lo1)*r)*Ma
 const DX=DXT.map(([n,la,lo])=>[n,bearing(SITECFG.lat,SITECFG.lon,la,lo)]);
 const state={tab:'delta',ground:'avg',sel:310,el:10};
 const P={
-  delta:{f:7.1,apex:7,bottom:2.5,orient:40,feed:'corner',balun:4,mb:false,fDesign:3.6,match:'radio'},
+  delta:{f:7.1,apex:7,bottom:2.5,orient:40,feed:'corner',balun:4,cx:0,cy:0,mb:false,fDesign:3.6,match:'radio'},
   hdelta:{f:3.65,feedPos:'corner',match:'radio',balun:4,beamAz:0,corners:null},
   dipole:{f:7.1,height:7,arm1:220,spread:180,cx:0,cy:0,shape:'flat',feedSys:'balun11'},
   eatu:{QL:100},
@@ -1245,7 +1265,7 @@ function antKey(tab,p){return tab==='y15'?'y15:'+p.design:tab;}
 const ANTNAME={'y15:5el':'Yagi 5 el. 15 m','y15:4el':'Yagi 4 el. 15 m',a3s:'A3S',y10:'Yagi 10 m',hex:'Hexbeam',quad:'Quad Cubex',delta:'Delta',dipole:'Dipol',hdelta:'Delta pozioma'};
 state.mastAssign={};(SITECFG.masts||[]).forEach(m=>{if(m.ant)state.mastAssign[m.ant]=m.id;});
 function mastFor(tab,p){const id=state.mastAssign[antKey(tab,p)];return (SITECFG.masts||[]).find(m=>m.id===id)||null;}
-function antPos(tab,p){const m=mastFor(tab,p);return m?m.pos:tab==='dipole'?[p.cx||0,p.cy||0]:null;}
+function antPos(tab,p){const m=mastFor(tab,p);return m?m.pos:(tab==='dipole'||tab==='delta')?[p.cx||0,p.cy||0]:null;}
 const RAD=Math.PI/180;
 function inPoly(q,Pg){let c=false;for(let i=0,j=Pg.length-1;i<Pg.length;j=i++){const a=Pg[i],b=Pg[j];if((a[1]>q[1])!==(b[1]>q[1])&&q[0]<(b[0]-a[0])*(q[1]-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;}
 function edgeDist(q,Pg){let m=1e9;for(let i=0,j=Pg.length-1;i<Pg.length;j=i++){const a=Pg[j],b=Pg[i],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/(dx*dx+dy*dy)));m=Math.min(m,Math.hypot(q[0]-a[0]-t*dx,q[1]-a[1]-t*dy));}return m;}
@@ -1415,13 +1435,79 @@ function noiseModel(R,f){const E=NOISE_ENV[state.noise.env],lg=Math.log10(f),Fam
   const lam=299.8/f, snr=(g)=>(-120+20*Math.log10(lam)+g-10*Math.log10(480*Math.PI*Math.PI))-(-204+10*Math.log10(2500)+ntot);
   return {Fa,avgDb:10*Math.log10(avg),nextDb:10*Math.log10(next),ntot,nf,houses:H.length,rods:H.filter(h=>h.rod).length,near:H.length?Math.min(...H.map(h=>h.d)):null,share,env:E.n,
     rdf:(az,el)=>gAt(R,az,el)-10*Math.log10(avg),snr:(az,el)=>snr(gAt(R,az,el))};}
+// ---- best layout for every DX direction: NEC-2 + terrain correction scored once per layout, then every mast (or, without masts, every 2.5 m point in the parcel) checked for fit
+const DXSHORT=['USA wsch. (W1)','USA zach. (W6)','Karaiby','Ameryka Płd.','Afryka Płd.','VK6','VK2','Japonia'];
+const DXRES={};let dxRun=0;
+function dxKey(t){const p=P[t],c=[state.ground,state.coax.type,state.coax.len,p.f];
+  if(t==='dipole')c.push(p.height,p.shape,p.feedSys);else if(t==='delta')c.push(p.apex,p.mb,p.fDesign,p.match);else c.push(p.match,hdCorners().map(q=>[q.e,q.n,q.h].map(v=>(+v).toFixed(1)).join(",")).sort().join(';'));return JSON.stringify(c);}
+function dxStale(){for(const t of Object.keys(DXRES))if(DXRES[t]&&DXRES[t].key!==dxKey(t)){delete DXRES[t];renderDX(t);const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h){h.classList.remove('err');h.textContent='Zmieniło się pasmo, wysokość, grunt albo kabel. Policz kierunki jeszcze raz.';}}}
+function dxPositions(tab){const Pg=SITECFG.parcel;
+  if(HAS_MASTS)return SITECFG.masts.filter(m=>!(tab==='dipole'&&(()=>{const o=mastOcc(m.id);return o.main&&NO_DIPOLE.has(o.main);})())).map(m=>({mast:m.id,pos:m.pos,label:'maszt '+m.id}));
+  if(!Pg)return [{pos:[0,0],label:'środek działki'}];const xs=Pg.map(q=>q[0]),ys=Pg.map(q=>q[1]),out=[];
+  for(let x=Math.ceil(Math.min(...xs)/2.5)*2.5;x<=Math.max(...xs);x+=2.5)for(let y=Math.ceil(Math.min(...ys)/2.5)*2.5;y<=Math.max(...ys);y+=2.5)
+    if(inPoly([x,y],Pg)&&edgeDist([x,y],Pg)>=1.5)out.push({pos:[x,y],label:`punkt ${x>=0?x.toFixed(1)+' E':(-x).toFixed(1)+' W'}, ${y>=0?y.toFixed(1)+' N':(-y).toFixed(1)+' S'} od środka działki`.replace(/\./g,',')});
+  return out;}
+function feedLossOf(t,p,Z){const cl=g=>coaxLoss(state.coax.type,p.f,state.coax.len,Math.min(0.999,g)).TL,gm=(Z,R0)=>Math.hypot(Z.R-R0,Z.X)/Math.hypot(Z.R+R0,Z.X);
+  const atu=(Z,k)=>{const a=lNetwork({R:Z.R/k,X:Z.X/k},p.f,50,P.eatu.QL);return (a?a.lossDb:3)+cl(0);};
+  if(t==='dipole')return p.feedSys==='atu'?atu(Z,1):cl(gm(Z,50));
+  if(t==='hdelta'||(t==='delta'&&p.mb))return p.match==='eatu'?atu(Z,4):cl(gm(Z,200));
+  return Math.min(cl(gm(Z,50)),cl(gm(Z,200)));}
+function dxScore(res,segs0,beam,o,TT,loss){const ant={segs:rotateSegs(segs0,beam),zc:res.zc},St=compute(ant,o,TT,false),Sf=compute(ant,o,TT,true);
+  return o.AZ.map((az,i)=>{let lin=0;o.EL.forEach((el,j)=>{const c=Math.max(-30,Math.min(12,St.G[i][j]-Sf.G[i][j]));lin+=Math.pow(10,(necGain(res,az-beam,el)+c)/10);});return 10*Math.log10(lin/o.EL.length)-loss;});}
+async function optimizeDX(t){const my=++dxRun,p0=P[t],lam=299.8/p0.f,gr=GROUNDS[state.ground],hint=document.querySelector(`.dxhint[data-t="${t}"]`),btn=document.querySelector(`.dxgo[data-t="${t}"]`);
+  const AZ=DX.map(d=>d[1]),o={f:p0.f,ground:state.ground,AZ,EL:[5,7,9,11,13,15],noNorm:true},TT=terrainWithBuildings(),rows=[];btn.disabled=true;hint.classList.remove('err');
+  const pc0={...p0,coaxLen:state.coax.len,coaxR:COAX[state.coax.type].r};
+  try{
+  if(t==='dipole'){const vf=wireVF(p0.f),S=[180,150,120,90,60];
+    for(const [k,sp] of S.entries()){hint.textContent=`Liczę NEC-2… kąt ramion ${sp}° (${k+1} z ${S.length})`;const res=await necAnalyze('dipole',{...pc0,spread:sp},wireRadius(),gr);if(my!==dxRun)return;
+      const loss=feedLossOf('dipole',p0,res.Z),segs0=reduceSegs(res.segs,lam),reach=res.info.Le*vf/2*Math.cos(res.info.droop*RAD);
+      for(let beam=0;beam<360;beam+=5)rows.push({sp,beam,reach,loss,g:dxScore(res,segs0,beam,o,TT,loss)});await new Promise(r=>setTimeout(r,0));}
+    const Pg=SITECFG.parcel,pos=dxPositions('dipole');
+    DXRES.dipole=AZ.map((az,i)=>{let best=null;for(const q of pos)for(const r of rows){const a1=norm(r.beam-Math.floor(r.sp/2)),a2=norm(a1+r.sp);
+        if(Pg&&!(parcelRay(q.pos,a1)>=r.reach+FIT_MARGIN&&parcelRay(q.pos,a2)>=r.reach+FIT_MARGIN))continue;const g=r.g[i]+(q.mast&&q.mast===state.mastAssign.dipole?0.05:0);
+        if(!best||g>best.gs)best={gs:g,g:r.g[i],q,sp:r.sp,beam:r.beam,a1,a2,reach:r.reach,loss:r.loss};}return best;});
+  } else if(t==='delta'){const vf=dVF(p0),B=[];for(let b=1;b<=Math.min(5,p0.apex-1)+1e-9;b+=1)B.push(b);const F=['corner','side','base'];let k=0;
+    for(const feed of F)for(const bottom of B){hint.textContent=`Liczę NEC-2… wariant ${++k} z ${F.length*B.length}`;const res=await necAnalyze('delta',{...pc0,bottom,feed},wireRadius(),gr);if(my!==dxRun)return;
+      const loss=feedLossOf('delta',p0,res.Z),segs0=reduceSegs(res.segs,lam),halfB=res.info.b*vf/2;const s1=Math.hypot(res.Z.R-50,res.Z.X)/Math.hypot(res.Z.R+50,res.Z.X),s4=Math.hypot(res.Z.R-200,res.Z.X)/Math.hypot(res.Z.R+200,res.Z.X);
+      for(let orient=0;orient<180;orient+=5)rows.push({bottom:res.info.bottom,feed,orient,halfB,loss,balun:s4<s1?4:1,g:dxScore(res,segs0,(orient+270)%360,o,TT,loss)});await new Promise(r=>setTimeout(r,0));}
+    const Pg=SITECFG.parcel,pos=dxPositions('delta');
+    DXRES.delta=AZ.map((az,i)=>{let best=null;for(const q of pos)for(const r of rows){const tt=r.orient*RAD,d=[Math.sin(tt)*r.halfB,Math.cos(tt)*r.halfB];
+        if(Pg&&![[q.pos[0]+d[0],q.pos[1]+d[1]],[q.pos[0]-d[0],q.pos[1]-d[1]]].every(c=>inPoly(c,Pg)&&edgeDist(c,Pg)>=FIT_MARGIN))continue;
+        const g=r.g[i]+(q.mast&&q.mast===state.mastAssign.delta?0.05:0);if(!best||g>best.gs)best={...r,gs:g,g:r.g[i],q};}return best;});
+  } else {const base=P.hdelta.corners,R0=hdCorners();let k=0;
+    for(let rot=0;rot<3;rot++)for(const fp of ['corner','side']){hint.textContent=`Liczę NEC-2… zasilanie ${++k} z 6`;const C=[0,1,2].map(j=>R0[(rot+j)%3]);
+      const res=await necAnalyze('hdelta',{...pc0,corners:C,feedPos:fp},wireRadius(),gr);if(my!==dxRun)return;
+      {const loss=feedLossOf('hdelta',p0,res.Z);rows.push({rot,fp,loss,g:dxScore(res,reduceSegs(res.segs,lam),0,o,TT,loss)});}await new Promise(r=>setTimeout(r,0));}
+    DXRES.hdelta=AZ.map((az,i)=>{let best=null;for(const r of rows)if(!best||r.g[i]>best.g)best={...r,g:r.g[i]};return best;});}
+  DXRES[t].key=dxKey(t);
+  hint.textContent='Kliknij kierunek, aby ustawić antenę w najlepszym układzie. Wynik: średni zysk przy 5–15° w tym kierunku, z terenem, budynkami, drzewami i stratami w kablu'+(t==='dipole'?' albo eATU':'')+'. Bez pozostałych anten i metalu.';
+  {const L=DXRES[t].filter(Boolean).map(r=>r.loss);if(L.length&&Math.min(...L)>3)hint.textContent+=` Uwaga: straty zasilania ${fmtS(Math.min(...L))} dB i więcej, bo antena nie jest dopasowana na ${p0.f.toFixed(3)} MHz`+(t==='dipole'?(p0.feedSys!=='atu'?'. Spróbuj zasilania „bez baluna + eATU”.':'.'):(p0.match!=='eatu'?'. Spróbuj dopasowania „4:1 + eATU przy antenie”.':'.'));}
+  renderDX(t);}
+  catch(e){hint.classList.add('err');hint.textContent='Błąd: '+e.message;}
+  finally{btn.disabled=false;}}
+function dxLabel(t,r){if(!r)return 'nie mieści się w działce z żadnego miejsca';
+  const busy=()=>{if(!r.q.mast)return '';const o=mastOcc(r.q.mast),x=[];if(o.main&&o.main!==t)x.push(ANTNAME[o.main]||o.main);if(t==='delta'&&o.dipole)x.push('dipol');return x.length?` <span class="warn">(zdejmie z masztu: ${x.join(', ')})</span>`:'';};
+  if(t==='dipole')return `<b>${r.q.label}</b>, ramiona na ${r.a1}° i ${r.a2}°${r.sp<180?` (V ${r.sp}°), wiązka ${r.beam}° i ${(r.beam+180)%360}°`:` (prosty), wiązka ${r.beam%180}° i ${r.beam%180+180}°`}`;
+  if(t==='delta')return `<b>${r.q.label}</b>${busy()}, dolny drut ${r.orient}°–${r.orient+180}°, dół ${r.bottom.toFixed(1)} m, zasilanie: ${FEEDNAME[r.feed]}${P.delta.mb?'':', balun '+r.balun+':1'}`;
+  const C=P.hdelta.corners,nm=j=>{const c=C[(r.rot+j)%3];return c.src!=='pt'?c.src:'narożnik '+((r.rot+j)%3+1);};return r.fp==='corner'?`zasilanie w narożniku <b>${nm(0)}</b>`:`zasilanie na środku boku <b>${nm(0)}–${nm(1)}</b>`;}
+function renderDX(t){const el=document.querySelector(`.dxlist[data-t="${t}"]`),R=DXRES[t];if(!el)return;if(!R){el.innerHTML='';return;}
+  el.innerHTML=R.map((r,i)=>`<button type="button" class="dxrow${state.dxOn&&state.dxOn[t]===i?' on':''}" data-t="${t}" data-i="${i}"${r?'':' disabled'}><span class="g">${r?fmtS(r.g)+' dBi':'–'}</span><b>${DXSHORT[i]} ${DX[i][1]}°</b><br>${dxLabel(t,r)}${r?`<span class="ls"> · straty zasilania ${fmtS(r.loss)} dB</span>`:''}</button>`).join('');}
+function applyDX(t,i){const r=DXRES[t]&&DXRES[t][i];if(!r)return;state.dxOn=state.dxOn||{};state.dxOn[t]=i;let note='';
+  if(t==='dipole'){if(r.q.mast){const x=assignMast('dipole',r.q.mast);note=x&&x.err?x.err:'';}else{delete state.mastAssign.dipole;P.dipole.cx=r.q.pos[0];P.dipole.cy=r.q.pos[1];}P.dipole.spread=r.sp;P.dipole.arm1=r.a1;state.fitMsg='';}
+  else if(t==='delta'){if(r.q.mast){const x=assignMast('delta',r.q.mast);note=typeof x==='string'?x:'';}else{delete state.mastAssign.delta;P.delta.cx=r.q.pos[0];P.delta.cy=r.q.pos[1];}Object.assign(P.delta,{bottom:r.bottom,feed:r.feed,orient:r.orient},P.delta.mb?{}:{balun:r.balun});}
+  else{const C=P.hdelta.corners;P.hdelta.corners=[0,1,2].map(j=>C[(r.rot+j)%3]);P.hdelta.feedPos=r.fp;{const k=DXRES.hdelta.key;DXRES.hdelta=DXRES.hdelta.map(q=>q&&{...q,rot:(q.rot-r.rot+3)%3});DXRES.hdelta.key=k;}}
+  state.sel=DX[i][1];$('selAz').value=state.sel;state.el=10;$('elSel').value=10;syncSliders();
+  const h=document.querySelector(`.dxhint[data-t="${t}"]`);if(h)h.textContent=`Ustawione dla ${DXSHORT[i]} (${DX[i][1]}°). `+(note?note+' ':'')+'Pełny wynik z pozostałymi antenami i metalem widać na wykresach.';
+  renderDX(t);recompute();}
+document.addEventListener('click',e=>{const g=e.target.closest('.dxgo');if(g){if(!NEC.ok){document.querySelector(`.dxhint[data-t="${g.dataset.t}"]`).textContent='Silnik NEC-2 jeszcze się ładuje.';return;}optimizeDX(g.dataset.t);return;}
+  const r=e.target.closest('.dxrow');if(r)applyDX(r.dataset.t,+r.dataset.i);});
 const cdiv=(k,Z)=>{const d=Z.R*Z.R+Z.X*Z.X;return {R:k*Z.R/d,X:-k*Z.X/d};};
 // Cubex manual, Table I: λ/4 of 75 Ω RG-11 (VF 0.66) on 10/12/15 m, 50 Ω directly on 17/20 m
 const QSTUB={'10':172.72,'12':202.74,'15':233.68};
 function quadStub(p){return p.match==='cubex'&&QSTUB[p.band]?{cm:QSTUB[p.band]}:null;}
 const DIRK=['yagi','hex','quad'];
 let recId=0, NECR=null, NBR=null, RNB=null;
-async function recompute(){
+async function recompute(){dxStale();
   const my=++recId, t=state.tab, p=P[t], o={f:p.f,ground:state.ground};
   NECR=null;
   if((state.engine==='nec'||t==='hex'||t==='quad'||t==='hdelta'||(t==='delta'&&p.mb))&&NEC.ok){
@@ -1532,7 +1618,7 @@ function draw(){
     $('wireHint').textContent=state.wire==='CUSTOM'?'Własny współczynnik, np. zmierzony na Twojej antenie.':state.wire==='BARE'?'Bez izolacji: długość jak ze wzoru.':
       'Współczynnik liczony z geometrii izolacji dla '+p.f.toFixed(3)+' MHz. Producent go nie podaje. Zostaw 3–5% zapasu i dotnij analizatorem.';}
   if(t==='delta'){
-    [...$('dBalun').children].forEach(x=>x.setAttribute('aria-pressed',+x.dataset.v===p.balun));
+    [...$('dBalun').children].forEach(x=>x.setAttribute('aria-pressed',+x.dataset.v===p.balun));[...$('feed').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.feed));
     [...$('dMode').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===(p.mb?'mb':'mono')));$('dMB').hidden=!p.mb;$('dMono').hidden=!!p.mb;$('dBalunBox').hidden=!!p.mb;
     if(p.mb){[...$('dLoop').children].forEach(x=>x.setAttribute('aria-pressed',+x.dataset.v===p.fDesign));[...$('dOp').children].forEach(x=>{x.disabled=+x.dataset.v<p.fDesign*0.95;x.setAttribute('aria-pressed',Math.abs(+x.dataset.v-p.f)<1e-6);});
       [...$('dMatch').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===p.match));
